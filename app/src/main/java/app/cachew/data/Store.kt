@@ -72,7 +72,8 @@ class Store private constructor(private val prefs: SharedPreferences) {
         private const val KEY_SELECTED = "selected_packages"
         private const val KEY_ONBOARDING_DONE = "onboarding_done"
         private const val KEY_QUIET = "quiet_until"
-        private const val KEY_XIAOMI_POPUPS = "xiaomi_popups_done"
+        // v2: the card gained the Autostart step, so show it again to people who dismissed v1.
+        private const val KEY_XIAOMI_POPUPS = "xiaomi_steps_done_v2"
 
         const val QUIET_MINUTES = 15
 

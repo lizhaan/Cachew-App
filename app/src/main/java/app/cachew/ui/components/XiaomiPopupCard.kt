@@ -44,8 +44,10 @@ fun XiaomiPopupCard(modifier: Modifier = Modifier) {
         Text(stringResource(R.string.xiaomi_body), style = CachewType.Body.copy(fontSize = 14.sp, lineHeight = 20.sp), color = CachewColors.TextSecondary)
         Spacer(Modifier.height(10.dp))
         Row {
+            CardAction(stringResource(R.string.xiaomi_autostart), CachewColors.PurpleText) { Xiaomi.openAutostart(context) }
+            Spacer(Modifier.width(12.dp))
             CardAction(stringResource(R.string.xiaomi_open), CachewColors.PurpleText) { Xiaomi.openPopupPermission(context) }
-            Spacer(Modifier.width(8.dp))
+            Spacer(Modifier.width(12.dp))
             CardAction(stringResource(R.string.xiaomi_done), CachewColors.TextSecondary) {
                 store.xiaomiPopupsDone = true
                 done = true

@@ -38,10 +38,11 @@
     <string name="permission_stuck">Cachew is switched on but Android stopped it (this happens after an update). In Accessibility, turn “Cachew shop pause” off and on again.</string>
 
     <!-- Xiaomi / Redmi / POCO extra step -->
-    <string name="xiaomi_title">One more step on Xiaomi</string>
-    <string name="xiaomi_body">In Other permissions, turn on “Display pop-up windows while running in the background”. Without it the pause waits until you open Cachew yourself.</string>
-    <string name="xiaomi_open">Open settings</string>
-    <string name="xiaomi_done">It\'s on</string>
+    <string name="xiaomi_title">Two more steps on Xiaomi</string>
+    <string name="xiaomi_body">1. Autostart: turn it on for Cachew, or Xiaomi stops pauses when you swipe Cachew away.\n2. Other permissions: turn on “Display pop-up windows while running in the background”.</string>
+    <string name="xiaomi_autostart">Autostart</string>
+    <string name="xiaomi_open">Pop-ups</string>
+    <string name="xiaomi_done">Both on</string>
     <string name="ok">OK</string>
 
     <!-- Accessibility service (shown in system Settings → Accessibility) -->
