@@ -68,8 +68,12 @@ fun PermissionScreen(onboarding: Boolean, onContinue: () -> Unit, onSkip: () -> 
     var triedSettings by rememberSaveable { mutableStateOf(false) }
     var showWhy by rememberSaveable { mutableStateOf(false) }
 
+    var stuck by rememberSaveable { mutableStateOf(false) }
+
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
-        enabled = ShopWatchService.isEnabled(context)
+        val state = ShopWatchService.state(context)
+        enabled = state == ShopWatchService.State.On
+        stuck = state == ShopWatchService.State.Stuck
     }
 
     CachewBackground {
@@ -127,6 +131,14 @@ fun PermissionScreen(onboarding: Boolean, onContinue: () -> Unit, onSkip: () -> 
                     )
                     Spacer(Modifier.height(16.dp))
                     XiaomiPopupCard()
+                } else if (stuck) {
+                    Spacer(Modifier.height(20.dp))
+                    Text(
+                        stringResource(R.string.permission_stuck),
+                        style = CachewType.Body.copy(fontSize = 14.sp, lineHeight = 20.sp, fontWeight = FontWeight.SemiBold),
+                        color = CachewColors.Text,
+                        textAlign = TextAlign.Center,
+                    )
                 } else if (triedSettings) {
                     // Back from Settings but still off: either the switch itself wasn't turned on,
                     // or Android 13+ "restricted settings" greyed it out.

@@ -1,6 +1,8 @@
 package app.cachew.service
 
 import android.accessibilityservice.AccessibilityService
+import android.accessibilityservice.AccessibilityServiceInfo
+import android.view.accessibility.AccessibilityManager
 import android.content.ComponentName
 import android.content.Context
 import android.provider.Settings
@@ -46,16 +48,36 @@ class ShopWatchService : AccessibilityService() {
 
     override fun onInterrupt() = Unit
 
+    /** Possible states of the service, as the user needs to understand them. */
+    enum class State {
+        /** Switch is off in Settings → Accessibility. */
+        Off,
+        /** Switch is on, but Android isn't running the service (e.g. after the app was updated). */
+        Stuck,
+        /** Running: shops will be paused. */
+        On,
+    }
+
     companion object {
         private const val DEBOUNCE_MS = 2_000L
 
-        /** Is Cachew switched on in Settings → Accessibility? */
-        fun isEnabled(context: Context): Boolean {
-            val enabled = Settings.Secure.getString(
-                context.contentResolver, Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES
-            ) ?: return false
+        fun state(context: Context): State {
             val me = ComponentName(context, ShopWatchService::class.java)
-            return enabled.split(':').any { ComponentName.unflattenFromString(it) == me }
+            val switchedOn = Settings.Secure.getString(
+                context.contentResolver, Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES
+            )?.split(':')?.any { ComponentName.unflattenFromString(it) == me } == true
+            if (!switchedOn) return State.Off
+
+            // AccessibilityManager lists only services Android has actually bound. When our process
+            // is killed while the service runs (an app update does that), Android marks it "crashed"
+            // and won't restart it until the switch is turned off and on again.
+            val am = context.getSystemService(AccessibilityManager::class.java)
+            val running = am.getEnabledAccessibilityServiceList(AccessibilityServiceInfo.FEEDBACK_ALL_MASK)
+                .any { it.resolveInfo.serviceInfo.packageName == context.packageName }
+            return if (running) State.On else State.Stuck
         }
+
+        /** Is Cachew switched on and actually running? */
+        fun isEnabled(context: Context): Boolean = state(context) == State.On
     }
 }

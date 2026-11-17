@@ -59,8 +59,9 @@ fun DenScreen(onEditShops: () -> Unit, onTurnOn: () -> Unit) {
     val selected by store.selectedPackages.collectAsStateWithLifecycle()
 
     // Re-checked every time the den comes back to the front (e.g. after Settings).
-    var serviceOn by remember { mutableStateOf(ShopWatchService.isEnabled(context)) }
-    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { serviceOn = ShopWatchService.isEnabled(context) }
+    var serviceState by remember { mutableStateOf(ShopWatchService.state(context)) }
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { serviceState = ShopWatchService.state(context) }
+    val serviceOn = serviceState == ShopWatchService.State.On
 
     val names by produceState(emptyList<String>(), selected) {
         value = selected.map { ShopLabels.load(context, it).name }
@@ -81,7 +82,7 @@ fun DenScreen(onEditShops: () -> Unit, onTurnOn: () -> Unit) {
             Penny(PennyPose.Look, 180.dp, Modifier.align(Alignment.CenterHorizontally))
             Spacer(Modifier.height(16.dp))
 
-            ServiceCard(serviceOn = serviceOn, onTurnOn = onTurnOn)
+            ServiceCard(state = serviceState, onTurnOn = onTurnOn)
             Spacer(Modifier.height(CachewSize.Gap))
             if (serviceOn) {
                 XiaomiPopupCard()
@@ -120,18 +121,27 @@ fun DenScreen(onEditShops: () -> Unit, onTurnOn: () -> Unit) {
 }
 
 @Composable
-private fun ServiceCard(serviceOn: Boolean, onTurnOn: () -> Unit) {
+private fun ServiceCard(state: ShopWatchService.State, onTurnOn: () -> Unit) {
+    val serviceOn = state == ShopWatchService.State.On
     GlassCard(Modifier.fillMaxWidth(), selected = !serviceOn, onClick = if (serviceOn) null else onTurnOn) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
-                text = if (serviceOn) "✓  " + stringResource(R.string.den_service_on) else stringResource(R.string.den_service_off),
+                text = when (state) {
+                    ShopWatchService.State.On -> "✓  " + stringResource(R.string.den_service_on)
+                    ShopWatchService.State.Stuck -> stringResource(R.string.den_service_stuck)
+                    ShopWatchService.State.Off -> stringResource(R.string.den_service_off)
+                },
                 style = CachewType.Body.copy(fontWeight = FontWeight.SemiBold),
                 color = if (serviceOn) CachewColors.PurpleText else CachewColors.Text,
                 modifier = Modifier.weight(1f),
             )
             if (!serviceOn) {
                 Spacer(Modifier.width(12.dp))
-                Text(stringResource(R.string.den_turn_on), style = CachewType.Button, color = CachewColors.PurpleText)
+                Text(
+                    stringResource(if (state == ShopWatchService.State.Stuck) R.string.den_fix else R.string.den_turn_on),
+                    style = CachewType.Button,
+                    color = CachewColors.PurpleText,
+                )
             }
         }
     }
