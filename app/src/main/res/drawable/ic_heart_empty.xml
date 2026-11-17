@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Heart, used (design/03_icons/heart_empty.svg). -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:strokeColor="#E8DCC4"
+        android:strokeAlpha="0.35"
+        android:strokeWidth="2"
+        android:pathData="M12,21s-8,-5.2 -8,-11a4.5,4.5 0,0 1,8 -2.8A4.5,4.5 0,0 1,20 10c0,5.8 -8,11 -8,11z" />
+</vector>

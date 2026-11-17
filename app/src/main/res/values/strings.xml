@@ -1,3 +1,28 @@
 <resources>
-    <string name="app_name">Cachew_app</string>
+    <string name="app_name">Cachew</string>
+
+    <!-- 08 Pick shops -->
+    <string name="pick_shops_title">Where do impulse buys find you?</string>
+    <string name="pick_shops_subtitle">Cachew only steps in on these apps.</string>
+    <string name="pick_shops_not_installed">not installed</string>
+    <string name="pick_shops_other_app">Other app</string>
+    <string name="pick_shops_continue_empty">Pick at least one app</string>
+    <plurals name="pick_shops_continue">
+        <item quantity="one">Continue · %d app</item>
+        <item quantity="other">Continue · %d apps</item>
+    </plurals>
+
+    <!-- App picker ("+ Other app") -->
+    <string name="app_picker_title">Pick an app</string>
+    <string name="app_picker_search">Search apps</string>
+    <string name="app_picker_empty">No apps match</string>
+    <string name="app_picker_selected">added</string>
+    <string name="back">Back</string>
+
+    <!-- Temporary den (real home screen comes in stage 6) -->
+    <string name="den_greeting">Good evening</string>
+    <string name="den_title">Penny\'s den</string>
+    <string name="den_watching_label">Pause before</string>
+    <string name="den_edit_shops">Edit shops</string>
+    <string name="den_placeholder_note">The full den arrives in a later stage.</string>
 </resources>

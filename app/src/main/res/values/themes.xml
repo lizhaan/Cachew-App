@@ -1,5 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-
-    <style name="Theme.Cachew_app" parent="android:Theme.Material.Light.NoActionBar" />
+    <!-- Cachew is always dark. The window background matches the day gradient's top colour,
+         so there is no white flash before Compose draws the first frame. -->
+    <style name="Theme.Cachew" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowBackground">@color/bg_mid</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:windowLightStatusBar">false</item>
+    </style>
 </resources>
