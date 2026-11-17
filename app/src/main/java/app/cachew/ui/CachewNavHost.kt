@@ -10,15 +10,20 @@ import androidx.navigation.toRoute
 import app.cachew.data.Store
 import app.cachew.ui.screens.apppicker.AppPickerScreen
 import app.cachew.ui.screens.den.DenScreen
+import app.cachew.ui.screens.permission.PermissionScreen
 import app.cachew.ui.screens.pickshops.PickShopsScreen
 import kotlinx.serialization.Serializable
 
 // Type-safe routes: navigation-compose turns these @Serializable classes into route strings.
+// [onboarding] = part of the first-run flow (08 → 09 → den); false = opened later from the den / Me.
 
-/** Screen 08. [onboarding] = first run (progress bar, Continue goes to the den). Later reused from Me. */
+/** Screen 08. */
 @Serializable data class PickShopsRoute(val onboarding: Boolean)
 
 @Serializable object AppPickerRoute
+
+/** Screen 09. */
+@Serializable data class PermissionRoute(val onboarding: Boolean)
 
 @Serializable object DenRoute
 
@@ -36,21 +41,33 @@ fun CachewNavHost() {
                 onboarding = route.onboarding,
                 onOtherApp = { nav.navigate(AppPickerRoute) },
                 onContinue = {
-                    if (route.onboarding) {
-                        store.onboardingDone = true
-                        // Replace onboarding with the den so Back doesn't return to it.
-                        nav.navigate(DenRoute) { popUpTo<PickShopsRoute> { inclusive = true } }
-                    } else {
-                        nav.popBackStack()
-                    }
+                    if (route.onboarding) nav.navigate(PermissionRoute(onboarding = true)) else nav.popBackStack()
                 },
             )
         }
         composable<AppPickerRoute> {
             AppPickerScreen(onDone = { nav.popBackStack() })
         }
+        composable<PermissionRoute> { entry ->
+            val route = entry.toRoute<PermissionRoute>()
+            PermissionScreen(
+                onboarding = route.onboarding,
+                onContinue = {
+                    if (route.onboarding) {
+                        store.onboardingDone = true
+                        // Drop onboarding from the back stack so Back from the den leaves the app.
+                        nav.navigate(DenRoute) { popUpTo(0) { inclusive = true } }
+                    } else {
+                        nav.popBackStack()
+                    }
+                },
+            )
+        }
         composable<DenRoute> {
-            DenScreen(onEditShops = { nav.navigate(PickShopsRoute(onboarding = false)) })
+            DenScreen(
+                onEditShops = { nav.navigate(PickShopsRoute(onboarding = false)) },
+                onTurnOn = { nav.navigate(PermissionRoute(onboarding = false)) },
+            )
         }
     }
 }

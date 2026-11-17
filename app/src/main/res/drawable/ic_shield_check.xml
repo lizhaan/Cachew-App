@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Shield with a tick, for screen 09 (no SVG in design/03_icons; drawn to match the mockup). -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:strokeColor="#F2EBDD"
+        android:strokeWidth="1.8"
+        android:strokeLineJoin="round"
+        android:pathData="M12,3 L19,5.8 L19,11 C19,15.4 16,19.1 12,20.8 C8,19.1 5,15.4 5,11 L5,5.8 Z" />
+    <path
+        android:strokeColor="#F2EBDD"
+        android:strokeWidth="1.8"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M9,12 L11.2,14.2 L15.2,10" />
+</vector>

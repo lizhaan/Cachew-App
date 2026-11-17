@@ -36,6 +36,27 @@ class Store private constructor(private val prefs: SharedPreferences) {
         get() = prefs.getBoolean(KEY_ONBOARDING_DONE, false)
         set(value) = prefs.edit { putBoolean(KEY_ONBOARDING_DONE, value) }
 
+    // --- Quiet windows -------------------------------------------------------------
+    // After "Continue to <shop>" we leave that shop alone for a while, otherwise the
+    // pause would pop up again the moment the shop comes back to the front.
+
+    /** True if [packageName] is inside its quiet window right now. */
+    fun isQuiet(packageName: String, now: Long = System.currentTimeMillis()): Boolean =
+        (readQuiet()[packageName] ?: 0L) > now
+
+    /** Don't pause [packageName] for the next [QUIET_MINUTES] minutes. */
+    fun startQuiet(packageName: String, now: Long = System.currentTimeMillis()) {
+        // Drop expired entries so the map doesn't grow forever.
+        val map = readQuiet().filterValues { it > now }.toMutableMap()
+        map[packageName] = now + QUIET_MINUTES * 60_000L
+        prefs.edit { putString(KEY_QUIET, Json.encodeToString(map)) }
+    }
+
+    private fun readQuiet(): Map<String, Long> {
+        val raw = prefs.getString(KEY_QUIET, null) ?: return emptyMap()
+        return runCatching { Json.decodeFromString<Map<String, Long>>(raw) }.getOrDefault(emptyMap())
+    }
+
     private fun readPackages(): Set<String> {
         val raw = prefs.getString(KEY_SELECTED, null) ?: return emptySet()
         return runCatching { Json.decodeFromString<List<String>>(raw) }.getOrDefault(emptyList()).toCollection(LinkedHashSet())
@@ -45,6 +66,9 @@ class Store private constructor(private val prefs: SharedPreferences) {
         private const val PREFS = "cachew"
         private const val KEY_SELECTED = "selected_packages"
         private const val KEY_ONBOARDING_DONE = "onboarding_done"
+        private const val KEY_QUIET = "quiet_until"
+
+        const val QUIET_MINUTES = 15
 
         @Volatile private var instance: Store? = null
 

@@ -32,6 +32,32 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!-- The 10-second pause on top of a shop. Own task (taskAffinity) so it doesn't pull the
+             den along; singleTask so repeated shop events reuse it; hidden from Recents. -->
+        <activity
+            android:name=".pause.PauseActivity"
+            android:exported="false"
+            android:excludeFromRecents="true"
+            android:launchMode="singleTask"
+            android:taskAffinity="app.cachew.pause"
+            android:screenOrientation="portrait"
+            android:theme="@style/Theme.Cachew.Night"
+            tools:ignore="DiscouragedApi,LockedOrientationActivity" />
+
+        <!-- Notices which app comes to the front (package name only). Only the system can bind to it. -->
+        <service
+            android:name=".service.ShopWatchService"
+            android:exported="false"
+            android:label="@string/service_label"
+            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
+            <intent-filter>
+                <action android:name="android.accessibilityservice.AccessibilityService" />
+            </intent-filter>
+            <meta-data
+                android:name="android.accessibilityservice"
+                android:resource="@xml/shop_watch_service" />
+        </service>
     </application>
 
 </manifest>

@@ -21,6 +21,7 @@ import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import app.cachew.ui.theme.CachewColors
@@ -82,23 +83,24 @@ fun ShopTile(
     }
 }
 
+/** The coloured-letter / app-icon / "+" square. [size] 44dp in the grid, smaller in the pause pill. */
 @Composable
-private fun TileIconBox(icon: TileIcon, modifier: Modifier = Modifier) {
-    val shape = RoundedCornerShape(12.dp)
+fun TileIconBox(icon: TileIcon, modifier: Modifier = Modifier, size: Dp = 44.dp) {
+    val shape = RoundedCornerShape(size * 0.27f)
     when (icon) {
         is TileIcon.Letter -> Box(
-            modifier.size(44.dp).clip(shape).background(icon.color),
+            modifier.size(size).clip(shape).background(icon.color),
             contentAlignment = Alignment.Center,
         ) {
-            Text(icon.letter, fontFamily = Inter, fontWeight = FontWeight.ExtraBold, fontSize = 20.sp, color = Color.White)
+            Text(icon.letter, fontFamily = Inter, fontWeight = FontWeight.ExtraBold, fontSize = (size.value * 0.45f).sp, color = Color.White)
         }
         is TileIcon.AppIcon -> Image(
             bitmap = icon.bitmap,
             contentDescription = null,
-            modifier = modifier.size(44.dp).clip(shape),
+            modifier = modifier.size(size).clip(shape),
         )
         TileIcon.Plus -> Box(
-            modifier.size(44.dp).clip(shape).background(CachewColors.Purple.copy(alpha = 0.18f)),
+            modifier.size(size).clip(shape).background(CachewColors.Purple.copy(alpha = 0.18f)),
             contentAlignment = Alignment.Center,
         ) {
             Text("+", fontFamily = Inter, fontWeight = FontWeight.Bold, fontSize = 26.sp, color = CachewColors.PurpleText)

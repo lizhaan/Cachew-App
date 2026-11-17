@@ -1,4 +1,5 @@
 <resources>
+    <!-- The mascot is called "Cachew" in all user-facing text (never "Penny"). -->
     <string name="app_name">Cachew</string>
 
     <!-- 08 Pick shops -->
@@ -19,10 +20,45 @@
     <string name="app_picker_selected">added</string>
     <string name="back">Back</string>
 
+    <!-- 09 Permission -->
+    <string name="permission_title">Let Cachew notice when a shop opens</string>
+    <string name="permission_see_title">What we see</string>
+    <string name="permission_see_body">That a shopping app was opened, and when.</string>
+    <string name="permission_never_title">What we never see</string>
+    <string name="permission_never_body">Your card, your bank, your passwords or what\'s in your cart.</string>
+    <string name="permission_allow">Allow access</string>
+    <string name="permission_continue">Continue</string>
+    <string name="permission_is_on">Access is on</string>
+    <string name="permission_why">Why we need this</string>
+    <string name="permission_why_title">Why Cachew needs this</string>
+    <string name="permission_why_body">Android only tells an app which other app is on screen through Accessibility. Cachew uses it for one thing: noticing that a shop you picked was opened, so it can pause you. It never reads the screen, never sees what you type or buy, and nothing leaves your phone.</string>
+    <string name="permission_restricted_hint">Switch greyed out? Open Settings → Apps → Cachew → ⋮ → Allow restricted settings, then try again.</string>
+    <string name="ok">OK</string>
+
+    <!-- Accessibility service (shown in system Settings → Accessibility) -->
+    <string name="service_label">Cachew shop pause</string>
+    <string name="service_description">Cachew sees only which app was opened, and only to pause you before shopping apps you picked. It does not read the screen, what you type, or what you buy.</string>
+
+    <!-- 13 Pause -->
+    <string name="pause_pill">%1$s · opened at %2$s</string>
+    <string name="pause_title">Pause. Breathe.</string>
+    <string name="pause_body_day">You\'re in a shop. Cachew\'s got a couple of questions.</string>
+    <string name="pause_answer">Answer Cachew</string>
+
+    <!-- Temporary screen after the countdown (questions arrive in stage 3) -->
+    <string name="pause_after_title">Nice breath.</string>
+    <string name="pause_after_body">Cachew\'s questions arrive in the next build. For now, pick where to go.</string>
+    <string name="pause_back_to_den">Back to the den</string>
+    <string name="pause_continue_to">Continue to %1$s</string>
+
     <!-- Temporary den (real home screen comes in stage 6) -->
     <string name="den_greeting">Good evening</string>
-    <string name="den_title">Penny\'s den</string>
+    <string name="den_title">Cachew\'s den</string>
     <string name="den_watching_label">Pause before</string>
     <string name="den_edit_shops">Edit shops</string>
+    <string name="den_try_pause">Try a pause (demo)</string>
+    <string name="den_service_on">Pauses are on</string>
+    <string name="den_service_off">Pauses are off: Cachew can\'t notice shops yet.</string>
+    <string name="den_turn_on">Turn on</string>
     <string name="den_placeholder_note">The full den arrives in a later stage.</string>
 </resources>
