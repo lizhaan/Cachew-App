@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Backgrounds -->
+    <color name="bg_top">#2B5A45</color>
+    <color name="bg_mid">#163222</color>
+    <color name="bg_bottom">#09170F</color>
+    <color name="night_top">#22213F</color>
+    <color name="night_mid">#0F1A16</color>
+    <color name="night_bottom">#060C09</color>
+    <color name="forest_green">#1F3D2B</color>
+    <!-- Accent -->
+    <color name="purple">#8B5CF6</color>
+    <color name="purple_light">#A98BFF</color>
+    <color name="purple_dark">#6D28D9</color>
+    <color name="purple_text">#B79CFF</color>
+    <color name="purple_soft">#C4B5FD</color>
+    <!-- Text -->
+    <color name="text_primary">#F2EBDD</color>
+    <color name="text_title">#FBF6EC</color>
+    <color name="text_secondary">#ADE8DCC4</color> <!-- sand 68% -->
+    <color name="sand">#E8DCC4</color>
+    <!-- Game -->
+    <color name="cashew_gold">#F4B63F</color>
+    <color name="flame">#FBBF24</color>
+    <color name="heart">#F472B6</color>
+    <!-- Cards -->
+    <color name="card_fill">#13FFFFFF</color> <!-- white 7.5% -->
+    <color name="card_border">#21E8DCC4</color> <!-- sand 13% -->
+    <color name="card_selected_fill">#388B5CF6</color> <!-- purple 22% -->
+</resources>
