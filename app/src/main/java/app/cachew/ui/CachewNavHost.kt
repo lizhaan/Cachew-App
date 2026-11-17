@@ -50,18 +50,17 @@ fun CachewNavHost() {
         }
         composable<PermissionRoute> { entry ->
             val route = entry.toRoute<PermissionRoute>()
-            PermissionScreen(
-                onboarding = route.onboarding,
-                onContinue = {
-                    if (route.onboarding) {
-                        store.onboardingDone = true
-                        // Drop onboarding from the back stack so Back from the den leaves the app.
-                        nav.navigate(DenRoute) { popUpTo(0) { inclusive = true } }
-                    } else {
-                        nav.popBackStack()
-                    }
-                },
-            )
+            // Continue (service on) and Not now (service off) lead to the same place.
+            val leave = {
+                if (route.onboarding) {
+                    store.onboardingDone = true
+                    // Drop onboarding from the back stack so Back from the den leaves the app.
+                    nav.navigate(DenRoute) { popUpTo(0) { inclusive = true } }
+                } else {
+                    nav.popBackStack()
+                }
+            }
+            PermissionScreen(onboarding = route.onboarding, onContinue = { leave() }, onSkip = { leave() })
         }
         composable<DenRoute> {
             DenScreen(

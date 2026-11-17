@@ -1,6 +1,10 @@
 package app.cachew.ui.screens.permission
 
+import android.content.ActivityNotFoundException
+import android.content.ComponentName
+import android.content.Context
 import android.content.Intent
+import android.os.Build
 import android.provider.Settings
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -57,7 +61,7 @@ import app.cachew.ui.theme.Inter
  * service is on and switch the button to "Continue".
  */
 @Composable
-fun PermissionScreen(onboarding: Boolean, onContinue: () -> Unit) {
+fun PermissionScreen(onboarding: Boolean, onContinue: () -> Unit, onSkip: () -> Unit) {
     val context = LocalContext.current
     var enabled by rememberSaveable { mutableStateOf(ShopWatchService.isEnabled(context)) }
     var triedSettings by rememberSaveable { mutableStateOf(false) }
@@ -82,7 +86,25 @@ fun PermissionScreen(onboarding: Boolean, onContinue: () -> Unit) {
             ) {
                 Spacer(Modifier.height(16.dp))
                 if (onboarding) OnboardingProgress(done = 4, total = 4) else Spacer(Modifier.height(5.dp))
-                Spacer(Modifier.height(56.dp))
+                // A way out that doesn't need the permission: "Not now" goes to the den
+                // (it shows "Pauses are off" with a Turn on button), so nobody gets stuck here.
+                if (!enabled) {
+                    Text(
+                        text = stringResource(R.string.permission_not_now),
+                        fontFamily = Inter,
+                        fontWeight = FontWeight.SemiBold,
+                        fontSize = 15.sp,
+                        color = CachewColors.TextSecondary,
+                        modifier = Modifier
+                            .align(Alignment.End)
+                            .clip(RoundedCornerShape(12.dp))
+                            .clickable(onClick = onSkip)
+                            .padding(horizontal = 8.dp, vertical = 10.dp),
+                    )
+                    Spacer(Modifier.height(10.dp))
+                } else {
+                    Spacer(Modifier.height(56.dp))
+                }
                 ShieldBadge()
                 Spacer(Modifier.height(28.dp))
                 Text(
@@ -103,8 +125,16 @@ fun PermissionScreen(onboarding: Boolean, onContinue: () -> Unit) {
                         color = CachewColors.PurpleText,
                     )
                 } else if (triedSettings) {
-                    // Back from Settings but still off: most likely Android 13+ "restricted settings".
+                    // Back from Settings but still off: either the switch itself wasn't turned on,
+                    // or Android 13+ "restricted settings" greyed it out.
                     Spacer(Modifier.height(20.dp))
+                    Text(
+                        stringResource(R.string.permission_still_off),
+                        style = CachewType.Body.copy(fontSize = 14.sp, lineHeight = 20.sp, fontWeight = FontWeight.SemiBold),
+                        color = CachewColors.Text,
+                        textAlign = TextAlign.Center,
+                    )
+                    Spacer(Modifier.height(8.dp))
                     Text(
                         stringResource(R.string.permission_restricted_hint),
                         style = CachewType.Body.copy(fontSize = 14.sp, lineHeight = 20.sp),
@@ -122,9 +152,7 @@ fun PermissionScreen(onboarding: Boolean, onContinue: () -> Unit) {
                     text = stringResource(R.string.permission_allow),
                     onClick = {
                         triedSettings = true
-                        context.startActivity(
-                            Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                        )
+                        openAccessibilitySettings(context)
                     },
                 )
             }
@@ -155,6 +183,27 @@ fun PermissionScreen(onboarding: Boolean, onContinue: () -> Unit) {
             textContentColor = CachewColors.Text,
         )
     }
+}
+
+/**
+ * Android 13+ can open our service's own page (the one with the on/off switch) directly,
+ * so the user doesn't have to hunt for it in the list ("Downloaded apps" on Xiaomi).
+ * Older phones, or skins that don't support it, get the general Accessibility list.
+ */
+private fun openAccessibilitySettings(context: Context) {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+        // Settings action for one service's page; the constant isn't in the public SDK, so the raw string.
+        val details = Intent("android.settings.ACCESSIBILITY_DETAILS_SETTINGS")
+            .putExtra(Intent.EXTRA_COMPONENT_NAME, ComponentName(context, ShopWatchService::class.java).flattenToString())
+            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        try {
+            context.startActivity(details)
+            return
+        } catch (_: ActivityNotFoundException) {
+            // fall through to the general list
+        }
+    }
+    context.startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
 }
 
 @Composable

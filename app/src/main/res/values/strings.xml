@@ -32,7 +32,9 @@
     <string name="permission_why">Why we need this</string>
     <string name="permission_why_title">Why Cachew needs this</string>
     <string name="permission_why_body">Android only tells an app which other app is on screen through Accessibility. Cachew uses it for one thing: noticing that a shop you picked was opened, so it can pause you. It never reads the screen, never sees what you type or buy, and nothing leaves your phone.</string>
+    <string name="permission_still_off">Almost there: in Accessibility, open “Cachew shop pause” and switch it on.</string>
     <string name="permission_restricted_hint">Switch greyed out? Open Settings → Apps → Cachew → ⋮ → Allow restricted settings, then try again.</string>
+    <string name="permission_not_now">Not now</string>
     <string name="ok">OK</string>
 
     <!-- Accessibility service (shown in system Settings → Accessibility) -->
