@@ -43,6 +43,7 @@ import app.cachew.ui.components.GlassCard
 import app.cachew.ui.components.Penny
 import app.cachew.ui.components.PennyPose
 import app.cachew.ui.components.PrimaryButton
+import app.cachew.ui.components.XiaomiPopupCard
 import app.cachew.ui.theme.CachewColors
 import app.cachew.ui.theme.CachewSize
 import app.cachew.ui.theme.CachewType
@@ -82,6 +83,10 @@ fun DenScreen(onEditShops: () -> Unit, onTurnOn: () -> Unit) {
 
             ServiceCard(serviceOn = serviceOn, onTurnOn = onTurnOn)
             Spacer(Modifier.height(CachewSize.Gap))
+            if (serviceOn) {
+                XiaomiPopupCard()
+                Spacer(Modifier.height(CachewSize.Gap))
+            }
 
             GlassCard(Modifier.fillMaxWidth()) {
                 Text(stringResource(R.string.den_watching_label).uppercase(), style = CachewType.Label, color = CachewColors.PurpleText)

@@ -35,6 +35,12 @@
     <string name="permission_still_off">Almost there: in Accessibility, open “Cachew shop pause” (on Xiaomi: Downloaded apps) and switch it on.</string>
     <string name="permission_restricted_hint">Switch greyed out? Open Settings → Apps → Cachew → ⋮ → Allow restricted settings, then try again.</string>
     <string name="permission_not_now">Not now</string>
+
+    <!-- Xiaomi / Redmi / POCO extra step -->
+    <string name="xiaomi_title">One more step on Xiaomi</string>
+    <string name="xiaomi_body">In Other permissions, turn on “Display pop-up windows while running in the background”. Without it the pause waits until you open Cachew yourself.</string>
+    <string name="xiaomi_open">Open settings</string>
+    <string name="xiaomi_done">It\'s on</string>
     <string name="ok">OK</string>
 
     <!-- Accessibility service (shown in system Settings → Accessibility) -->

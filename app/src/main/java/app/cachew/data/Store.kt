@@ -36,6 +36,11 @@ class Store private constructor(private val prefs: SharedPreferences) {
         get() = prefs.getBoolean(KEY_ONBOARDING_DONE, false)
         set(value) = prefs.edit { putBoolean(KEY_ONBOARDING_DONE, value) }
 
+    /** User said they turned on Xiaomi's "pop-up windows in background" (we can't check it ourselves). */
+    var xiaomiPopupsDone: Boolean
+        get() = prefs.getBoolean(KEY_XIAOMI_POPUPS, false)
+        set(value) = prefs.edit { putBoolean(KEY_XIAOMI_POPUPS, value) }
+
     // --- Quiet windows -------------------------------------------------------------
     // After "Continue to <shop>" we leave that shop alone for a while, otherwise the
     // pause would pop up again the moment the shop comes back to the front.
@@ -67,6 +72,7 @@ class Store private constructor(private val prefs: SharedPreferences) {
         private const val KEY_SELECTED = "selected_packages"
         private const val KEY_ONBOARDING_DONE = "onboarding_done"
         private const val KEY_QUIET = "quiet_until"
+        private const val KEY_XIAOMI_POPUPS = "xiaomi_popups_done"
 
         const val QUIET_MINUTES = 15
 
