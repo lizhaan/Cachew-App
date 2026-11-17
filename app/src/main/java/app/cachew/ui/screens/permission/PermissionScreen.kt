@@ -200,7 +200,9 @@ private fun openAccessibilitySettings(context: Context) {
             context.startActivity(details)
             return
         } catch (_: ActivityNotFoundException) {
-            // fall through to the general list
+            // No such page on this phone: fall through to the general list.
+        } catch (_: SecurityException) {
+            // Some skins (Xiaomi HyperOS) keep this page for system apps only.
         }
     }
     context.startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
