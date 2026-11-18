@@ -19,6 +19,19 @@ import java.time.YearMonth
  */
 class Store private constructor(private val prefs: SharedPreferences) {
 
+    init {
+        // One-off: early test builds saved items in the phone's currency (UAH). There is no
+        // currency setting yet, so everything is dollars now.
+        if (!prefs.getBoolean(KEY_USD_MIGRATED, false)) {
+            val items = readList<WaitItem>(KEY_ITEMS).map { it.copy(currency = Money.DEFAULT_CURRENCY) }
+            prefs.edit {
+                putString(KEY_ITEMS, Json.encodeToString(items))
+                remove(KEY_CURRENCY)
+                putBoolean(KEY_USD_MIGRATED, true)
+            }
+        }
+    }
+
     private val _selectedPackages = MutableStateFlow(readPackages())
 
     /** Package names that get a pause: recommended shops and any app picked via "+ Other app". */
@@ -76,9 +89,9 @@ class Store private constructor(private val prefs: SharedPreferences) {
         get() = prefs.getInt(KEY_WAIT_HOURS, 48)
         set(value) = prefs.edit { putInt(KEY_WAIT_HOURS, value) }
 
-    /** Currency for new items (a Me setting later); defaults to the phone's region. */
+    /** Currency for new items (a Me setting later); US dollars by default. */
     var currency: String
-        get() = prefs.getString(KEY_CURRENCY, null) ?: Money.defaultCurrency()
+        get() = prefs.getString(KEY_CURRENCY, null) ?: Money.DEFAULT_CURRENCY
         set(value) = prefs.edit { putString(KEY_CURRENCY, value) }
 
     fun snapshot(today: LocalDate = LocalDate.now()): GameSnapshot = GameSnapshot(
@@ -181,6 +194,7 @@ class Store private constructor(private val prefs: SharedPreferences) {
         private const val KEY_QUEST_DAY = "quest_pause_day"
         private const val KEY_ITEMS = "wait_items"
         private const val KEY_LOG = "pause_log"
+        private const val KEY_USD_MIGRATED = "usd_migrated_v1"
         private const val NO_DAY = Long.MIN_VALUE
 
         const val QUIET_MINUTES = 15
