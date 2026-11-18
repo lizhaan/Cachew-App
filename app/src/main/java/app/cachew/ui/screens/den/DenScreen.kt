@@ -34,6 +34,12 @@ import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.cachew.R
 import app.cachew.data.Money
+import app.cachew.data.WaitItem
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.TextButton
+import androidx.compose.ui.text.input.KeyboardType
 import app.cachew.data.ShopApps
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.runtime.mutableIntStateOf
@@ -57,7 +63,7 @@ import app.cachew.ui.theme.CachewType
  * Replaced by the real screen 12 in stage 6.
  */
 @Composable
-fun DenScreen(onEditShops: () -> Unit, onTurnOn: () -> Unit) {
+fun DenScreen(onEditShops: () -> Unit, onTurnOn: () -> Unit, onOpenItem: (String) -> Unit) {
     val context = LocalContext.current
     val store = remember { Store.get(context) }
     val selected by store.selectedPackages.collectAsStateWithLifecycle()
@@ -76,6 +82,17 @@ fun DenScreen(onEditShops: () -> Unit, onTurnOn: () -> Unit) {
     var resumes by remember { mutableIntStateOf(0) }
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { resumes++ }
     val game = remember(gameVersion, resumes) { store.snapshot() }
+    var editing by remember { mutableStateOf<WaitItem?>(null) }
+    editing?.let { item ->
+        EditItemDialog(
+            item = item,
+            onDismiss = { editing = null },
+            onSave = {
+                store.updateItem(it)
+                editing = null
+            },
+        )
+    }
 
     CachewBackground {
         Column(
@@ -106,10 +123,26 @@ fun DenScreen(onEditShops: () -> Unit, onTurnOn: () -> Unit) {
                 if (game.waiting.isEmpty()) {
                     Text(stringResource(R.string.den_waiting_empty), style = CachewType.Body, color = CachewColors.TextSecondary)
                 }
+                // Ready items open "Still want it?"; items still waiting can be renamed / re-priced.
                 game.waiting.forEach { item ->
                     val price = item.price?.let { " · " + Money.format(it, item.currency) }.orEmpty()
-                    val hoursLeft = ((item.dueAt - System.currentTimeMillis()) / 3_600_000L).coerceAtLeast(0)
-                    Text("${item.title}$price · ${hoursLeft}h left", style = CachewType.Body, color = CachewColors.Text)
+                    val left = item.dueAt - System.currentTimeMillis()
+                    val ready = left <= 0
+                    val status = when {
+                        ready -> stringResource(R.string.den_item_ready)
+                        left < 3_600_000L -> stringResource(R.string.den_item_minutes_left, (left / 60_000L).toInt() + 1)
+                        else -> stringResource(R.string.den_item_hours_left, (left / 3_600_000L).toInt())
+                    }
+                    Text(
+                        text = "${item.title}$price · $status",
+                        style = CachewType.Body.copy(fontWeight = if (ready) FontWeight.Bold else FontWeight.Normal),
+                        color = if (ready) CachewColors.PurpleText else CachewColors.Text,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(8.dp))
+                            .clickable { if (ready) onOpenItem(item.id) else editing = item }
+                            .padding(vertical = 6.dp),
+                    )
                 }
             }
             Spacer(Modifier.height(CachewSize.Gap))
@@ -150,6 +183,37 @@ fun DenScreen(onEditShops: () -> Unit, onTurnOn: () -> Unit) {
             Text(stringResource(R.string.den_placeholder_note), style = CachewType.Body, color = CachewColors.TextSecondary.copy(alpha = 0.5f))
         }
     }
+}
+
+/** Rename / re-price an item (e.g. "Something from Temu" after Skip). */
+@Composable
+private fun EditItemDialog(item: WaitItem, onDismiss: () -> Unit, onSave: (WaitItem) -> Unit) {
+    var name by remember { mutableStateOf(item.title) }
+    var price by remember { mutableStateOf(item.price?.let { if (it % 1.0 == 0.0) it.toLong().toString() else it.toString() }.orEmpty()) }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = CachewColors.BgMid,
+        titleContentColor = CachewColors.Title,
+        title = { Text(stringResource(R.string.edit_item_title)) },
+        text = {
+            Column {
+                OutlinedTextField(name, { name = it }, label = { Text(stringResource(R.string.edit_item_name)) }, singleLine = true)
+                Spacer(Modifier.height(8.dp))
+                OutlinedTextField(
+                    price, { price = it },
+                    label = { Text(stringResource(R.string.edit_item_price) + " (" + Money.symbol(item.currency) + ")") },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = {
+                onSave(item.copy(title = name.trim().ifEmpty { item.title }, price = Money.parse(price)))
+            }) { Text(stringResource(R.string.save)) }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) } },
+    )
 }
 
 @Composable

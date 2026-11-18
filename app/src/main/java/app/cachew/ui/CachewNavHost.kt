@@ -1,6 +1,8 @@
 package app.cachew.ui
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import app.cachew.ui.screens.stillwant.StillWantFlow
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.compose.NavHost
@@ -27,12 +29,23 @@ import kotlinx.serialization.Serializable
 
 @Serializable object DenRoute
 
+/** Screen 19 "Still want it?" for one waiting-list item (then 20 or 22). */
+@Serializable data class StillWantRoute(val itemId: String)
+
 @Composable
-fun CachewNavHost() {
+fun CachewNavHost(openItemId: String? = null, onItemOpened: () -> Unit = {}) {
     val context = LocalContext.current
     val store = remember { Store.get(context) }
     val nav = rememberNavController()
     val start: Any = if (store.onboardingDone) DenRoute else PickShopsRoute(onboarding = true)
+
+    // Opened from a reminder notification: go straight to "Still want it?".
+    LaunchedEffect(openItemId) {
+        if (openItemId != null && store.onboardingDone) {
+            nav.navigate(StillWantRoute(openItemId)) { launchSingleTop = true }
+        }
+        if (openItemId != null) onItemOpened()
+    }
 
     NavHost(navController = nav, startDestination = start) {
         composable<PickShopsRoute> { entry ->
@@ -66,6 +79,13 @@ fun CachewNavHost() {
             DenScreen(
                 onEditShops = { nav.navigate(PickShopsRoute(onboarding = false)) },
                 onTurnOn = { nav.navigate(PermissionRoute(onboarding = false)) },
+                onOpenItem = { nav.navigate(StillWantRoute(it)) },
+            )
+        }
+        composable<StillWantRoute> { entry ->
+            StillWantFlow(
+                itemId = entry.toRoute<StillWantRoute>().itemId,
+                onDone = { if (!nav.popBackStack()) nav.navigate(DenRoute) },
             )
         }
     }

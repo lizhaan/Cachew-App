@@ -117,6 +117,58 @@
     <string name="reward_quest_done">Quest done ✓</string>
     <string name="reward_goodnight">Goodnight, Cachew</string>
 
+    <!-- 16 Share -->
+    <string name="share_target_label">Cachew waiting list</string>
+    <string name="share_label_from">Shared from %1$s</string>
+    <string name="share_unknown_shop">a shop</string>
+    <string name="share_title">Into the waiting list</string>
+    <string name="share_saved">Cachew will ask in %1$d hours.</string>
+    <string name="share_saved_minute">Cachew will ask in 1 minute (test).</string>
+
+    <!-- 18 Reminder notification -->
+    <string name="reminders_channel">Waiting list reminders</string>
+    <string name="reminder_title">Your %1$d hours are up</string>
+    <string name="reminder_title_short">Your wait is up</string>
+    <string name="reminder_body_price">Still want %1$s for %2$s?</string>
+    <string name="reminder_body">Still want %1$s?</string>
+    <string name="reminder_waited_till_morning">Cachew waited till morning to ask.</string>
+
+    <!-- 19 Still want it? -->
+    <string name="still_label">Waiting list · %1$s later</string>
+    <string name="still_title">Still want it?</string>
+    <string name="still_added">Added %1$s</string>
+    <string name="still_insight_night">You added it at %1$s. Late-night wants often fade by morning.</string>
+    <string name="still_insight_kept">You\'ve kept %1$s this month by waiting.</string>
+    <string name="still_insight_first">Most wants fade with a little time. Letting this one go starts your stash.</string>
+    <string name="still_let_go_keep">Let it go · keep %1$s</string>
+    <string name="still_let_go">Let it go</string>
+    <string name="still_buy_heart">Buy it with a heart</string>
+    <string name="still_wait_day">Wait another day</string>
+    <string name="still_waiting_more">Cachew will ask again tomorrow.</string>
+
+    <!-- 20 Win -->
+    <string name="win_label">Kept, not spent</string>
+    <string name="win_let_go">Let go ✓</string>
+    <string name="win_stash">Cachew\'s winter stash · %1$s</string>
+    <string name="win_levelled_up">Cachew levelled up</string>
+    <string name="win_stash_grew">Cachew\'s stash grew</string>
+    <string name="win_level">Level %1$d · %2$s</string>
+    <string name="win_kept_in">kept in %1$s</string>
+    <string name="win_day_streak">day streak</string>
+    <string name="win_share">Share my win</string>
+    <string name="win_share_text_amount">I kept %1$s instead of spending it on an impulse buy. Cachew\'s winter stash: %2$s 🐿️</string>
+    <string name="win_share_text">I let an impulse buy go. Cachew\'s winter stash: %1$s 🐿️</string>
+
+    <!-- Edit item (temporary den, waiting list in stage 6) -->
+    <string name="edit_item_title">Edit item</string>
+    <string name="edit_item_name">Name</string>
+    <string name="edit_item_price">Price</string>
+    <string name="save">Save</string>
+    <string name="cancel">Cancel</string>
+    <string name="den_item_ready">ready</string>
+    <string name="den_item_hours_left">%1$dh left</string>
+    <string name="den_item_minutes_left">%1$dm left</string>
+
     <!-- 21 Bought without a heart -->
     <string name="bought_title">Cachew turned away</string>
     <string name="bought_body">You bought it without a heart. Cachew will be fine by morning, but the streak starts again. Next time, use a heart.</string>

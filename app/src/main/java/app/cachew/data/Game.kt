@@ -1,6 +1,7 @@
 package app.cachew.data
 
 import java.time.LocalDate
+import java.time.LocalDateTime
 import java.time.LocalTime
 import java.time.YearMonth
 import java.time.temporal.ChronoUnit
@@ -54,6 +55,39 @@ object Game {
     /** True if [time] is inside the from→to window; windows that cross midnight work too. */
     fun isNight(time: LocalTime, from: LocalTime = DEFAULT_NIGHT_FROM, to: LocalTime = DEFAULT_NIGHT_TO): Boolean =
         if (from < to) time >= from && time < to else time >= from || time < to
+
+    /**
+     * Reminders only come in the daytime. If [due] falls inside the night window, the reminder
+     * moves to the end of the window (07:00); the Boolean says whether it was moved
+     * (then the text adds "Cachew waited till morning to ask.").
+     */
+    fun reminderTime(
+        due: LocalDateTime,
+        from: LocalTime = DEFAULT_NIGHT_FROM,
+        to: LocalTime = DEFAULT_NIGHT_TO,
+    ): Pair<LocalDateTime, Boolean> {
+        if (!isNight(due.toLocalTime(), from, to)) return due to false
+        // After midnight (before "to") the morning is the same date; before midnight it's tomorrow.
+        val morning = if (due.toLocalTime() < to) due.toLocalDate() else due.toLocalDate().plusDays(1)
+        return morning.atTime(to) to true
+    }
+
+    // ---- Levels (by total money kept) ---------------------------------------------------
+
+    data class Level(val number: Int, val name: String, val from: Double)
+
+    val LEVELS = listOf(
+        Level(1, "Kit", 0.0),
+        Level(2, "Forager", 50.0),
+        Level(3, "Keeper", 150.0),
+        Level(4, "Hoarder", 400.0),
+        Level(5, "Stash Master", 1000.0),
+    )
+
+    fun levelFor(kept: Double): Level = LEVELS.last { kept >= it.from }
+
+    /** The level after this one, or null at the top. */
+    fun nextLevel(level: Level): Level? = LEVELS.getOrNull(level.number)
 
     // ---- Decision headline (screen 15) ---------------------------------------------------
 

@@ -55,6 +55,8 @@ import app.cachew.data.ShopLabel
 import app.cachew.data.ShopLabels
 import app.cachew.data.Store
 import app.cachew.data.WaitItem
+import app.cachew.reminders.Reminders
+import app.cachew.ui.components.rememberNotificationAsker
 import java.time.Instant
 import java.time.ZoneId
 import java.util.UUID
@@ -107,6 +109,7 @@ fun PauseFlow(
     var mood by rememberSaveable { mutableStateOf<Mood?>(null) }
     var onList by rememberSaveable { mutableStateOf<Boolean?>(null) }
     var reward by remember { mutableStateOf<RewardInfo?>(null) }
+    val askNotifications = rememberNotificationAsker()
 
     fun record(decision: Decision) = PauseRecord(
         at = openedAt, shopPackage = shopPackage, mood = mood ?: Mood.Fine,
@@ -155,7 +158,8 @@ fun PauseFlow(
                         waitMillis = waitMillis,
                     )
                     reward = store.addToWaitingList(record(Decision.Waiting), item)
-                    step = Step.Reward
+                    Reminders.schedule(context, item)
+                    askNotifications { step = Step.Reward }
                 },
             )
             Step.Reward -> {

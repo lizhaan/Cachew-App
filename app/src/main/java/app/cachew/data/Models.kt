@@ -24,6 +24,13 @@ data class WaitItem(
     val addedAt: Long,
     val waitMillis: Long,
     val status: Status = Status.Waiting,
+    /** Photo saved from the product page (filesDir/thumbs/<id>.jpg), if any. */
+    val thumbPath: String? = null,
+    /** Display name of the shop when it isn't an installed app we know (e.g. from a web link). */
+    val shopName: String? = null,
+    val decidedAt: Long? = null,
+    /** When the "time's up" notification was shown; null = still to come. */
+    val remindedAt: Long? = null,
 ) {
     @Serializable
     enum class Status { Waiting, Kept, BoughtWithHeart }
@@ -40,6 +47,18 @@ data class GameSnapshot(
     /** "Buy it anyway" happened today: Cachew sits with its back turned in the den. */
     val boughtAnywayToday: Boolean,
     val waiting: List<WaitItem>,
+)
+
+/** What screen 20 needs after "Let it go". [amount] is null for items without a price. */
+data class WinInfo(
+    val amount: Double?,
+    val currency: String,
+    val stash: Double,
+    val keptThisMonth: Double,
+    val level: Game.Level,
+    val levelledUp: Boolean,
+    val streak: Int,
+    val heartsLeft: Int,
 )
 
 /** What screen 17 needs after "Add to waiting list". */

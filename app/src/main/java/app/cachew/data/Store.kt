@@ -125,15 +125,90 @@ class Store private constructor(private val prefs: SharedPreferences) {
 
     /** "Use a heart": one heart less this month, streak untouched. */
     fun useHeart(record: PauseRecord, today: LocalDate = LocalDate.now()) {
+        spendHeart(today)
+        prefs.edit { putString(KEY_LOG, Json.encodeToString(pauseLog() + record)) }
+        changed()
+    }
+
+    private fun spendHeart(today: LocalDate) {
         val month = YearMonth.from(today).toString()
         val usedThisMonth = if (prefs.getString(KEY_HEARTS_MONTH, null) == month) prefs.getInt(KEY_HEARTS_USED, 0) else 0
         prefs.edit {
             putString(KEY_HEARTS_MONTH, month)
             putInt(KEY_HEARTS_USED, usedThisMonth + 1)
-            putString(KEY_LOG, Json.encodeToString(pauseLog() + record))
         }
+    }
+
+    // --- Waiting list items ---------------------------------------------------------
+
+    fun item(id: String): WaitItem? = waitItems().firstOrNull { it.id == id }
+
+    /** Item added through Share (screen 16): no nuts, no pause log entry. */
+    fun addSharedItem(item: WaitItem) {
+        prefs.edit { putString(KEY_ITEMS, Json.encodeToString(waitItems() + item)) }
         changed()
     }
+
+    fun updateItem(item: WaitItem) {
+        prefs.edit { putString(KEY_ITEMS, Json.encodeToString(waitItems().map { if (it.id == item.id) item else it })) }
+        changed()
+    }
+
+    /** Money kept by letting things go, all time (the "winter stash"). */
+    fun keptTotal(): Double = keptItems().sumOf { it.price ?: 0.0 }
+
+    fun keptIn(month: YearMonth): Double = keptItems()
+        .filter { it.decidedAt != null && YearMonth.from(epochToDate(it.decidedAt)) == month }
+        .sumOf { it.price ?: 0.0 }
+
+    private fun keptItems() = waitItems().filter { it.status == WaitItem.Status.Kept }
+
+    /** 19 "Let it go": the item is kept (not bought); its price joins the stash. */
+    fun letGo(id: String, now: Long = System.currentTimeMillis()): WinInfo? {
+        val item = item(id) ?: return null
+        val levelBefore = Game.levelFor(keptTotal())
+        updateItem(item.copy(status = WaitItem.Status.Kept, decidedAt = now))
+        val today = epochToDate(now)
+        val stash = keptTotal()
+        val level = Game.levelFor(stash)
+        return WinInfo(
+            amount = item.price,
+            currency = item.currency,
+            stash = stash,
+            keptThisMonth = keptIn(YearMonth.from(today)),
+            level = level,
+            levelledUp = level.number > levelBefore.number,
+            streak = Game.streak(today, firstDay, lastBuyAnywayDay),
+            heartsLeft = heartsLeft(today),
+        )
+    }
+
+    /** 19 "Buy it with a heart": a planned treat, costs one heart, streak untouched. */
+    fun buyWithHeart(id: String, now: Long = System.currentTimeMillis()) {
+        val item = item(id) ?: return
+        spendHeart(epochToDate(now))
+        updateItem(item.copy(status = WaitItem.Status.BoughtWithHeart, decidedAt = now))
+    }
+
+    /** 19 "Wait another day": +24 hours on the clock. Returns the updated item. */
+    fun waitAnotherDay(id: String): WaitItem? {
+        val item = item(id) ?: return null
+        val updated = item.copy(waitMillis = item.waitMillis + 24 * 3_600_000L, remindedAt = null)
+        updateItem(updated)
+        return updated
+    }
+
+    fun markReminded(id: String, now: Long = System.currentTimeMillis()) {
+        item(id)?.let { updateItem(it.copy(remindedAt = now)) }
+    }
+
+    /** We ask for the notification permission once, when the first item is added. */
+    var notificationsAsked: Boolean
+        get() = prefs.getBoolean(KEY_NOTIF_ASKED, false)
+        set(value) = prefs.edit { putBoolean(KEY_NOTIF_ASKED, value) }
+
+    private fun epochToDate(millis: Long): LocalDate =
+        java.time.Instant.ofEpochMilli(millis).atZone(java.time.ZoneId.systemDefault()).toLocalDate()
 
     /** "Buy it anyway": the streak starts again from today. */
     fun buyAnyway(record: PauseRecord, today: LocalDate = LocalDate.now()) {
@@ -195,6 +270,7 @@ class Store private constructor(private val prefs: SharedPreferences) {
         private const val KEY_ITEMS = "wait_items"
         private const val KEY_LOG = "pause_log"
         private const val KEY_USD_MIGRATED = "usd_migrated_v1"
+        private const val KEY_NOTIF_ASKED = "notifications_asked"
         private const val NO_DAY = Long.MIN_VALUE
 
         const val QUIET_MINUTES = 15

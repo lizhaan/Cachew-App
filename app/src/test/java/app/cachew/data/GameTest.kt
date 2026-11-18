@@ -6,6 +6,7 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.time.LocalDate
+import java.time.LocalDateTime
 import java.time.LocalTime
 import java.time.YearMonth
 
@@ -91,6 +92,33 @@ class GameTest {
 
     @Test fun headline_stressedButOnList() {
         assertEquals(listOf(Part.Stressed), Game.headlineParts(Mood.Stressed, onList = true, night = false))
+    }
+
+    // ---- Reminders: only in the daytime ------------------------------------------
+
+    @Test fun reminder_daytimeStaysAsIs() {
+        val due = LocalDateTime.of(2026, 11, 12, 14, 30)
+        assertEquals(due to false, Game.reminderTime(due))
+    }
+
+    @Test fun reminder_lateEveningMovesToNextMorning() {
+        val due = LocalDateTime.of(2026, 11, 12, 23, 43)
+        assertEquals(LocalDateTime.of(2026, 11, 13, 7, 0) to true, Game.reminderTime(due))
+    }
+
+    @Test fun reminder_afterMidnightMovesToSameMorning() {
+        val due = LocalDateTime.of(2026, 11, 13, 2, 15)
+        assertEquals(LocalDateTime.of(2026, 11, 13, 7, 0) to true, Game.reminderTime(due))
+    }
+
+    // ---- Levels ---------------------------------------------------------------------
+
+    @Test fun levels_byKeptMoney() {
+        assertEquals("Kit", Game.levelFor(0.0).name)
+        assertEquals("Forager", Game.levelFor(64.0).name)
+        assertEquals("Keeper", Game.levelFor(212.0).name)
+        assertEquals("Stash Master", Game.levelFor(5000.0).name)
+        assertEquals(null, Game.nextLevel(Game.levelFor(5000.0)))
     }
 
     // ---- Money --------------------------------------------------------------------
