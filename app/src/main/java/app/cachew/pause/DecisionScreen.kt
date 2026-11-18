@@ -38,6 +38,7 @@ import app.cachew.ui.theme.CachewSize
 import app.cachew.ui.theme.CachewType
 import app.cachew.ui.theme.Inter
 import java.time.LocalDate
+import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
@@ -49,7 +50,8 @@ fun DecisionScreen(
     night: Boolean,
     heartsLeft: Int,
     heartsRefill: LocalDate,
-    showBuyAnyway: Boolean,
+    /** Set at night in Strict mode: the button is replaced by "no buy anyway until <time>". */
+    noBuyAnywayUntil: LocalTime?,
     onWait: () -> Unit,
     onHeart: () -> Unit,
     onBuyAnyway: () -> Unit,
@@ -115,9 +117,16 @@ fun DecisionScreen(
             }
             Spacer(Modifier.height(16.dp))
         }
-        // Strict mode at night (stage 5) hides this.
-        if (showBuyAnyway) {
+        if (noBuyAnywayUntil == null) {
             TextAction(stringResource(R.string.decision_buy_anyway), onBuyAnyway, Modifier.padding(bottom = 8.dp))
+        } else {
+            Text(
+                stringResource(R.string.decision_no_buy_until, noBuyAnywayUntil.format(DateTimeFormatter.ofPattern("HH:mm"))),
+                style = CachewType.Body,
+                color = CachewColors.TextSecondary.copy(alpha = 0.7f),
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp).padding(bottom = 8.dp),
+            )
         }
     }
 }

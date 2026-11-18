@@ -111,6 +111,30 @@ class GameTest {
         assertEquals(LocalDateTime.of(2026, 11, 13, 7, 0) to true, Game.reminderTime(due))
     }
 
+    // ---- Night shield ---------------------------------------------------------------
+
+    @Test fun shield_offMeansNoNight_butRemindersStillQuiet() {
+        val off = NightShield(on = false)
+        assertFalse(off.isNight(LocalTime.of(23, 30)))
+        // Reminders still wait for the morning: 22:00–09:00 when the shield is off.
+        val due = LocalDateTime.of(2026, 11, 12, 22, 30)
+        assertEquals(LocalDateTime.of(2026, 11, 13, 9, 0) to true, Game.reminderTime(due, off.quietFrom, off.quietTo))
+    }
+
+    @Test fun shield_customWindowAndStrict() {
+        val shield = NightShield(from = LocalTime.of(21, 0), to = LocalTime.of(6, 30), strict = true)
+        assertTrue(shield.isNight(LocalTime.of(21, 15)))
+        assertFalse(shield.isNight(LocalTime.of(6, 30)))
+        assertTrue(shield.blocksBuyAnyway(night = true))
+        assertFalse(shield.blocksBuyAnyway(night = false))
+        assertFalse(shield.copy(strict = false).blocksBuyAnyway(night = true))
+    }
+
+    @Test fun shield_sameFromAndToIsInvalid() {
+        assertFalse(NightShield.isValid(LocalTime.of(23, 0), LocalTime.of(23, 0)))
+        assertTrue(NightShield.isValid(LocalTime.of(23, 0), LocalTime.of(7, 0)))
+    }
+
     // ---- Levels ---------------------------------------------------------------------
 
     @Test fun levels_byKeptMoney() {

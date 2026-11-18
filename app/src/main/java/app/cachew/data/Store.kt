@@ -8,6 +8,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.serialization.json.Json
 import java.time.LocalDate
+import java.time.LocalTime
 import java.time.YearMonth
 
 /**
@@ -83,6 +84,24 @@ class Store private constructor(private val prefs: SharedPreferences) {
     /** Bumped after every game change, so screens that show counters can refresh. */
     private val _gameVersion = MutableStateFlow(0)
     val gameVersion: StateFlow<Int> = _gameVersion.asStateFlow()
+
+    /** Night shield (screen 10). Times are stored as minutes since midnight. */
+    var nightShield: NightShield
+        get() = NightShield(
+            on = prefs.getBoolean(KEY_SHIELD_ON, true),
+            from = LocalTime.ofSecondOfDay(prefs.getInt(KEY_SHIELD_FROM, 23 * 60) * 60L),
+            to = LocalTime.ofSecondOfDay(prefs.getInt(KEY_SHIELD_TO, 7 * 60) * 60L),
+            strict = prefs.getBoolean(KEY_SHIELD_STRICT, true),
+        )
+        set(value) {
+            prefs.edit {
+                putBoolean(KEY_SHIELD_ON, value.on)
+                putInt(KEY_SHIELD_FROM, value.from.hour * 60 + value.from.minute)
+                putInt(KEY_SHIELD_TO, value.to.hour * 60 + value.to.minute)
+                putBoolean(KEY_SHIELD_STRICT, value.strict)
+            }
+            changed()
+        }
 
     /** Default "Wait for" choice (Me → Waiting time in stage 6). */
     var defaultWaitHours: Int
@@ -271,6 +290,10 @@ class Store private constructor(private val prefs: SharedPreferences) {
         private const val KEY_LOG = "pause_log"
         private const val KEY_USD_MIGRATED = "usd_migrated_v1"
         private const val KEY_NOTIF_ASKED = "notifications_asked"
+        private const val KEY_SHIELD_ON = "shield_on"
+        private const val KEY_SHIELD_FROM = "shield_from_min"
+        private const val KEY_SHIELD_TO = "shield_to_min"
+        private const val KEY_SHIELD_STRICT = "shield_strict"
         private const val NO_DAY = Long.MIN_VALUE
 
         const val QUIET_MINUTES = 15

@@ -100,9 +100,10 @@ fun PauseFlow(
     val label by produceState<ShopLabel?>(null, shopPackage) { value = ShopLabels.load(context, shopPackage) }
     val shopName = label?.name ?: ShopLabels.quickName(shopPackage)
 
-    // Night is decided once, when the shop was opened (default 23:00–07:00 until stage 5).
+    // Night is decided once, when the shop was opened, by the night shield's schedule.
+    val shield = remember { store.nightShield }
     val night = remember(openedAt) {
-        Game.isNight(Instant.ofEpochMilli(openedAt).atZone(ZoneId.systemDefault()).toLocalTime())
+        shield.isNight(Instant.ofEpochMilli(openedAt).atZone(ZoneId.systemDefault()).toLocalTime())
     }
 
     var step by rememberSaveable { mutableStateOf(Step.Countdown) }
@@ -133,7 +134,8 @@ fun PauseFlow(
                 DecisionScreen(
                     mood = mood ?: Mood.Fine, onList = onList ?: false, night = night,
                     heartsLeft = game.heartsLeft, heartsRefill = game.heartsRefill,
-                    showBuyAnyway = true, // stage 5: false at night in Strict mode
+                    // Strict at night: no "Buy it anyway", just "no buy anyway until 07:00".
+                    noBuyAnywayUntil = if (shield.blocksBuyAnyway(night)) shield.to else null,
                     onWait = { step = Step.Item },
                     onHeart = {
                         store.useHeart(record(Decision.Heart))

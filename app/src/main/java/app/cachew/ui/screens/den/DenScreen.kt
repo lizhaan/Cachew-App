@@ -34,6 +34,11 @@ import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.cachew.R
 import app.cachew.data.Money
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.size
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.unit.sp
+import java.time.format.DateTimeFormatter
 import app.cachew.data.WaitItem
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.AlertDialog
@@ -62,8 +67,10 @@ import app.cachew.ui.theme.CachewType
  * TEMPORARY den (stages 1–5): saved shops, whether the pause service is on, and a demo pause.
  * Replaced by the real screen 12 in stage 6.
  */
+private val HHMM = DateTimeFormatter.ofPattern("HH:mm")
+
 @Composable
-fun DenScreen(onEditShops: () -> Unit, onTurnOn: () -> Unit, onOpenItem: (String) -> Unit) {
+fun DenScreen(onEditShops: () -> Unit, onTurnOn: () -> Unit, onOpenItem: (String) -> Unit, onNightShield: () -> Unit) {
     val context = LocalContext.current
     val store = remember { Store.get(context) }
     val selected by store.selectedPackages.collectAsStateWithLifecycle()
@@ -114,6 +121,22 @@ fun DenScreen(onEditShops: () -> Unit, onTurnOn: () -> Unit, onOpenItem: (String
                 StatCard(game.streak.toString(), stringResource(R.string.stat_streak), Modifier.weight(1f), R.drawable.ic_flame)
                 StatCard(game.nuts.toString(), stringResource(R.string.den_nuts), Modifier.weight(1f), R.drawable.ic_cashew)
                 StatCard(game.heartsLeft.toString(), stringResource(R.string.stat_hearts_left), Modifier.weight(1f), R.drawable.ic_heart)
+            }
+            Spacer(Modifier.height(CachewSize.Gap))
+
+            // Night shield card (as on mockup 12), with the real schedule.
+            val shield = remember(gameVersion, resumes) { store.nightShield }
+            GlassCard(Modifier.fillMaxWidth(), onClick = onNightShield) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Image(painterResource(R.drawable.ic_moon), contentDescription = null, modifier = Modifier.size(26.dp))
+                    Spacer(Modifier.width(14.dp))
+                    Text(stringResource(R.string.shield_title), style = CachewType.Body.copy(fontWeight = FontWeight.Bold, fontSize = 18.sp), color = CachewColors.Title, modifier = Modifier.weight(1f))
+                    Text(
+                        if (shield.on) "${shield.from.format(HHMM)} – ${shield.to.format(HHMM)}" else stringResource(R.string.den_shield_off),
+                        style = CachewType.Body.copy(fontSize = 17.sp),
+                        color = CachewColors.TextSecondary,
+                    )
+                }
             }
             Spacer(Modifier.height(CachewSize.Gap))
 

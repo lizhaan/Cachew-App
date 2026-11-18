@@ -45,7 +45,8 @@ object Reminders {
         val zone = ZoneId.systemDefault()
         val due = LocalDateTime.ofInstant(Instant.ofEpochMilli(item.dueAt), zone)
         val isTestMinute = item.waitMillis < 3_600_000L
-        val (at, moved) = if (isTestMinute) due to false else Game.reminderTime(due)
+        val shield = Store.get(context).nightShield
+        val (at, moved) = if (isTestMinute) due to false else Game.reminderTime(due, shield.quietFrom, shield.quietTo)
         val delay = (at.atZone(zone).toInstant().toEpochMilli() - now).coerceAtLeast(0)
 
         val request = OneTimeWorkRequestBuilder<ReminderWorker>()
@@ -65,9 +66,11 @@ object Reminders {
     }
 
     /** On app start: every waiting item that hasn't been reminded yet has a job (KEEP = don't reset existing ones). */
-    fun ensureAll(context: Context) {
-        Store.get(context).waitItems()
-            .filter { it.status == WaitItem.Status.Waiting && it.remindedAt == null }
-            .forEach { schedule(context, it, replace = false) }
-    }
+    fun ensureAll(context: Context) = pending(context).forEach { schedule(context, it, replace = false) }
+
+    /** After the night shield changes: re-plan every pending reminder for the new quiet hours. */
+    fun rescheduleAll(context: Context) = pending(context).forEach { schedule(context, it, replace = true) }
+
+    private fun pending(context: Context) = Store.get(context).waitItems()
+        .filter { it.status == WaitItem.Status.Waiting && it.remindedAt == null }
 }

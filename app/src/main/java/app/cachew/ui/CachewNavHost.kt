@@ -3,6 +3,7 @@ package app.cachew.ui
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import app.cachew.ui.screens.stillwant.StillWantFlow
+import app.cachew.ui.screens.nightshield.NightShieldScreen
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.compose.NavHost
@@ -26,6 +27,9 @@ import kotlinx.serialization.Serializable
 
 /** Screen 09. */
 @Serializable data class PermissionRoute(val onboarding: Boolean)
+
+/** Screen 10. In onboarding it comes after 09 (order 08 → 09 → 10 → den). */
+@Serializable data class NightShieldRoute(val onboarding: Boolean)
 
 @Serializable object DenRoute
 
@@ -65,21 +69,31 @@ fun CachewNavHost(openItemId: String? = null, onItemOpened: () -> Unit = {}) {
             val route = entry.toRoute<PermissionRoute>()
             // Continue (service on) and Not now (service off) lead to the same place.
             val leave = {
-                if (route.onboarding) {
-                    store.onboardingDone = true
-                    // Drop onboarding from the back stack so Back from the den leaves the app.
-                    nav.navigate(DenRoute) { popUpTo(0) { inclusive = true } }
-                } else {
-                    nav.popBackStack()
-                }
+                if (route.onboarding) nav.navigate(NightShieldRoute(onboarding = true)) else nav.popBackStack()
             }
             PermissionScreen(onboarding = route.onboarding, onContinue = { leave() }, onSkip = { leave() })
+        }
+        composable<NightShieldRoute> { entry ->
+            val route = entry.toRoute<NightShieldRoute>()
+            NightShieldScreen(
+                onboarding = route.onboarding,
+                onSaved = {
+                    if (route.onboarding) {
+                        store.onboardingDone = true
+                        // Drop onboarding from the back stack so Back from the den leaves the app.
+                        nav.navigate(DenRoute) { popUpTo(0) { inclusive = true } }
+                    } else {
+                        nav.popBackStack()
+                    }
+                },
+            )
         }
         composable<DenRoute> {
             DenScreen(
                 onEditShops = { nav.navigate(PickShopsRoute(onboarding = false)) },
                 onTurnOn = { nav.navigate(PermissionRoute(onboarding = false)) },
                 onOpenItem = { nav.navigate(StillWantRoute(it)) },
+                onNightShield = { nav.navigate(NightShieldRoute(onboarding = false)) },
             )
         }
         composable<StillWantRoute> { entry ->
