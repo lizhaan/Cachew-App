@@ -53,13 +53,86 @@
     <string name="pause_pill">%1$s · opened at %2$s</string>
     <string name="pause_title">Pause. Breathe.</string>
     <string name="pause_body_day">You\'re in a shop. Cachew\'s got a couple of questions.</string>
+    <string name="pause_body_night">It\'s late and you\'re in a shop. Cachew\'s got a couple of questions.</string>
     <string name="pause_answer">Answer Cachew</string>
 
-    <!-- Temporary screen after the countdown (questions arrive in stage 3) -->
-    <string name="pause_after_title">Nice breath.</string>
-    <string name="pause_after_body">Cachew\'s questions arrive in the next build. For now, pick where to go.</string>
     <string name="pause_back_to_den">Back to the den</string>
     <string name="pause_continue_to">Continue to %1$s</string>
+
+    <!-- 14 Questions -->
+    <string name="questions_label">Pause · 2 questions</string>
+    <string name="questions_night_shield">night shield</string>
+    <string name="questions_title">How are you feeling right now?</string>
+    <string name="mood_tired">Tired</string>
+    <string name="mood_bored">Bored</string>
+    <string name="mood_stressed">Stressed</string>
+    <string name="mood_fine">Fine</string>
+    <string name="questions_on_list">Was it on your list?</string>
+    <string name="questions_on_list_night">Was it on your list before tonight?</string>
+    <string name="yes">Yes</string>
+    <string name="no">No</string>
+    <string name="questions_continue">Continue</string>
+
+    <!-- 15 Decision. The headline is built from parts: "Tired, late, not on your list." -->
+    <string name="part_tired">tired</string>
+    <string name="part_bored">bored</string>
+    <string name="part_stressed">stressed</string>
+    <string name="part_late">late</string>
+    <string name="part_not_on_list">not on your list</string>
+    <string name="decision_headline_end">%1$s.</string>
+    <string name="decision_headline_but_on_list">%1$s, but on your list.</string>
+    <string name="decision_all_good">On your list and feeling fine.</string>
+    <string name="decision_body_risky">Those are usually the buys you regret. Want to let it wait?</string>
+    <string name="decision_body_planned">Sounds planned. A short wait still never hurts.</string>
+    <string name="decision_wait_title">Add to waiting list</string>
+    <string name="decision_wait_body">Tell Cachew what it was. We\'ll ask again later.</string>
+    <string name="decision_heart_title">Use a heart</string>
+    <string name="decision_heart_body">A planned treat. No guilt, no streak loss.</string>
+    <string name="decision_heart_empty">No hearts left. They refill %1$s.</string>
+    <string name="decision_buy_anyway">Buy it anyway</string>
+
+    <!-- What did you want? (after Add to waiting list) -->
+    <string name="item_label">Waiting list · %1$s</string>
+    <string name="item_title">What did you want?</string>
+    <string name="item_name_hint">e.g. Chunky knit sweater</string>
+    <string name="item_price_hint">Price (optional)</string>
+    <string name="item_wait_for">Wait for</string>
+    <string name="item_hours_short">%1$dh</string>
+    <string name="item_wait_button">Wait %1$d hours</string>
+    <string name="item_wait_button_minute">Wait 1 minute (test)</string>
+    <string name="item_skip">Skip</string>
+    <string name="item_tip">Most late-night wants feel different after a day or two. If you still want it, it\'s yours.</string>
+    <string name="item_default_name">Something from %1$s</string>
+
+    <!-- 17 Reward -->
+    <string name="reward_nuts">+%1$d nuts</string>
+    <string name="reward_title">Nice pause.</string>
+    <string name="reward_body_price">Cachew\'s holding your %1$s for %2$d hours.</string>
+    <string name="reward_body_no_price">Cachew\'s holding it for %1$d hours.</string>
+    <string name="reward_body_minute">Cachew\'s holding it for 1 minute (test).</string>
+    <plurals name="streak_days">
+        <item quantity="one">%d-day streak</item>
+        <item quantity="other">%d-day streak</item>
+    </plurals>
+    <string name="reward_quest_done">Quest done ✓</string>
+    <string name="reward_goodnight">Goodnight, Cachew</string>
+
+    <!-- 21 Bought without a heart -->
+    <string name="bought_title">Cachew turned away</string>
+    <string name="bought_body">You bought it without a heart. Cachew will be fine by morning, but the streak starts again. Next time, use a heart.</string>
+    <string name="bought_ok">Okay, tomorrow is new</string>
+    <string name="stat_streak">streak</string>
+    <string name="stat_hearts_left">hearts left</string>
+
+    <!-- 22 Used a heart -->
+    <string name="heart_title">−1 heart</string>
+    <string name="heart_body">Cachew turned away for a bit. You used a heart, so your streak is safe, but hearts run out fast.</string>
+    <plurals name="hearts_left_in_month">
+        <item quantity="one">%1$d heart left in %2$s</item>
+        <item quantity="other">%1$d hearts left in %2$s</item>
+    </plurals>
+    <string name="stat_streak_kept">streak kept</string>
+    <string name="stat_hearts_refill">hearts refill</string>
 
     <!-- Temporary den (real home screen comes in stage 6) -->
     <string name="den_greeting">Good evening</string>
@@ -73,4 +146,7 @@
     <string name="den_service_stuck">Pauses stopped after an update: turn Cachew off and on in Accessibility.</string>
     <string name="den_fix">Fix</string>
     <string name="den_placeholder_note">The full den arrives in a later stage.</string>
+    <string name="den_nuts">nuts</string>
+    <string name="den_waiting_label">Waiting</string>
+    <string name="den_waiting_empty">Nothing waiting yet.</string>
 </resources>

@@ -46,8 +46,18 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import app.cachew.R
+import app.cachew.data.Decision
+import app.cachew.data.Game
+import app.cachew.data.Mood
+import app.cachew.data.PauseRecord
+import app.cachew.data.RewardInfo
 import app.cachew.data.ShopLabel
 import app.cachew.data.ShopLabels
+import app.cachew.data.Store
+import app.cachew.data.WaitItem
+import java.time.Instant
+import java.time.ZoneId
+import java.util.UUID
 import app.cachew.ui.components.CachewBackground
 import app.cachew.ui.components.Penny
 import app.cachew.ui.components.PennyPose
@@ -62,31 +72,115 @@ import kotlin.math.ceil
 
 private const val PAUSE_SECONDS = 10
 
-/** Countdown (screen 13) → temporary "where to now?" screen. Stage 3 puts the questions in between. */
+/** The steps of one pause. Saved as an enum so it survives the activity being recreated. */
+private enum class Step { Countdown, Questions, Decision, Item, Reward, HeartUsed, Bought }
+
+/**
+ * One whole pause, step by step:
+ * 13 countdown → 14 questions → 15 decision →
+ *   Add to waiting list → "What did you want?" → 17 reward → close the shop (phone home)
+ *   Use a heart → 22 → den / continue to shop (quiet window)
+ *   Buy it anyway → 21 → back to shop (quiet window) / den
+ *
+ * Store changes happen only on the final button of a branch, so backing out halfway
+ * (Back = phone home screen) changes nothing.
+ */
 @Composable
 fun PauseFlow(
     shopPackage: String,
     openedAt: Long,
+    onGoHome: () -> Unit,
     onBackToDen: () -> Unit,
     onContinueToShop: () -> Unit,
 ) {
     val context = LocalContext.current
+    val store = remember { Store.get(context) }
     val label by produceState<ShopLabel?>(null, shopPackage) { value = ShopLabels.load(context, shopPackage) }
     val shopName = label?.name ?: ShopLabels.quickName(shopPackage)
-    var answered by rememberSaveable { mutableStateOf(false) }
 
-    // Pause screens always use the night background (CLAUDE.md: screens 13, 14, 15, 17, 18).
-    CachewBackground(night = true) {
-        if (!answered) {
-            PauseCountdown(label = label, shopName = shopName, openedAt = openedAt, onAnswer = { answered = true })
-        } else {
-            PauseAfter(shopName = shopName, onBackToDen = onBackToDen, onContinueToShop = onContinueToShop)
+    // Night is decided once, when the shop was opened (default 23:00–07:00 until stage 5).
+    val night = remember(openedAt) {
+        Game.isNight(Instant.ofEpochMilli(openedAt).atZone(ZoneId.systemDefault()).toLocalTime())
+    }
+
+    var step by rememberSaveable { mutableStateOf(Step.Countdown) }
+    var mood by rememberSaveable { mutableStateOf<Mood?>(null) }
+    var onList by rememberSaveable { mutableStateOf<Boolean?>(null) }
+    var reward by remember { mutableStateOf<RewardInfo?>(null) }
+
+    fun record(decision: Decision) = PauseRecord(
+        at = openedAt, shopPackage = shopPackage, mood = mood ?: Mood.Fine,
+        onList = onList ?: false, night = night, decision = decision,
+    )
+
+    // 22 "Used a heart" is the one day-background screen in the flow (as in the mockups).
+    CachewBackground(night = step != Step.HeartUsed) {
+        when (step) {
+            Step.Countdown -> PauseCountdown(
+                label = label, shopName = shopName, openedAt = openedAt, night = night,
+                onAnswer = { step = Step.Questions },
+            )
+            Step.Questions -> QuestionsScreen(
+                night = night, mood = mood, onList = onList,
+                onMood = { mood = it }, onOnList = { onList = it },
+                onContinue = { step = Step.Decision },
+            )
+            Step.Decision -> {
+                val game = remember { store.snapshot() }
+                DecisionScreen(
+                    mood = mood ?: Mood.Fine, onList = onList ?: false, night = night,
+                    heartsLeft = game.heartsLeft, heartsRefill = game.heartsRefill,
+                    showBuyAnyway = true, // stage 5: false at night in Strict mode
+                    onWait = { step = Step.Item },
+                    onHeart = {
+                        store.useHeart(record(Decision.Heart))
+                        step = Step.HeartUsed
+                    },
+                    onBuyAnyway = {
+                        store.buyAnyway(record(Decision.Bought))
+                        step = Step.Bought
+                    },
+                )
+            }
+            Step.Item -> ItemEntryScreen(
+                shop = label, shopName = shopName, currency = store.currency, defaultWaitHours = store.defaultWaitHours,
+                onSave = { name, price, waitMillis ->
+                    val item = WaitItem(
+                        id = UUID.randomUUID().toString(),
+                        title = name ?: context.getString(R.string.item_default_name, shopName),
+                        price = price,
+                        currency = store.currency,
+                        shopPackage = shopPackage,
+                        addedAt = System.currentTimeMillis(),
+                        waitMillis = waitMillis,
+                    )
+                    reward = store.addToWaitingList(record(Decision.Waiting), item)
+                    step = Step.Reward
+                },
+            )
+            Step.Reward -> {
+                val r = reward
+                if (r != null) {
+                    RewardScreen(r, night = night, onClose = onGoHome)
+                } else {
+                    // Only if the activity was recreated mid-flow: nothing left to show.
+                    LaunchedEffect(Unit) { onGoHome() }
+                }
+            }
+            Step.HeartUsed -> HeartUsedScreen(
+                game = remember { store.snapshot() }, shopName = shopName,
+                onBackToDen = onBackToDen, onContinueToShop = onContinueToShop,
+            )
+            Step.Bought -> BoughtScreen(
+                game = remember { store.snapshot() },
+                onBackToShop = onContinueToShop, onBackToDen = onBackToDen,
+            )
         }
     }
 }
 
 @Composable
-private fun PauseCountdown(label: ShopLabel?, shopName: String, openedAt: Long, onAnswer: () -> Unit) {
+private fun PauseCountdown(label: ShopLabel?, shopName: String, openedAt: Long, night: Boolean, onAnswer: () -> Unit) {
     val context = LocalContext.current
     val time = remember(openedAt) { DateFormat.getTimeFormat(context).format(Date(openedAt)) }
 
@@ -119,7 +213,7 @@ private fun PauseCountdown(label: ShopLabel?, shopName: String, openedAt: Long, 
         Text(stringResource(R.string.pause_title), style = CachewType.H1.copy(fontSize = 32.sp), color = CachewColors.Title)
         Spacer(Modifier.height(12.dp))
         Text(
-            stringResource(R.string.pause_body_day),
+            stringResource(if (night) R.string.pause_body_night else R.string.pause_body_day),
             style = CachewType.Body,
             color = CachewColors.TextSecondary,
             textAlign = TextAlign.Center,
@@ -187,43 +281,3 @@ private fun PauseRing(progress: Float) {
     }
 }
 
-/** TEMPORARY (stage 2): what happens after "Answer Cachew" until the questions exist. */
-@Composable
-private fun PauseAfter(shopName: String, onBackToDen: () -> Unit, onContinueToShop: () -> Unit) {
-    Column(
-        Modifier
-            .fillMaxSize()
-            .statusBarsPadding()
-            .navigationBarsPadding()
-            .padding(horizontal = CachewSize.ScreenPadding),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center,
-    ) {
-        Spacer(Modifier.weight(1f))
-        Penny(PennyPose.Calm, 220.dp)
-        Spacer(Modifier.height(20.dp))
-        Text(stringResource(R.string.pause_after_title), style = CachewType.H1, color = CachewColors.Title)
-        Spacer(Modifier.height(10.dp))
-        Text(
-            stringResource(R.string.pause_after_body),
-            style = CachewType.Body,
-            color = CachewColors.TextSecondary,
-            textAlign = TextAlign.Center,
-        )
-        Spacer(Modifier.weight(1f))
-        PrimaryButton(text = stringResource(R.string.pause_back_to_den), onClick = onBackToDen)
-        Spacer(Modifier.height(8.dp))
-        Text(
-            text = stringResource(R.string.pause_continue_to, shopName),
-            style = CachewType.Button,
-            color = CachewColors.TextSecondary,
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(CachewSize.ButtonRadius))
-                .clickable(onClick = onContinueToShop)
-                .padding(vertical = 16.dp),
-            textAlign = TextAlign.Center,
-        )
-        Spacer(Modifier.height(8.dp))
-    }
-}

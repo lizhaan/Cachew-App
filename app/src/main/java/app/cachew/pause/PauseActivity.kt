@@ -50,6 +50,7 @@ class PauseActivity : ComponentActivity() {
                     PauseFlow(
                         shopPackage = shopPackage,
                         openedAt = openedAt,
+                        onGoHome = ::goHome,
                         onBackToDen = ::backToDen,
                         onContinueToShop = ::continueToShop,
                     )
@@ -80,6 +81,7 @@ class PauseActivity : ComponentActivity() {
         showingFor = shopPackage
     }
 
+    /** Back button and screen 17's button: leave the shop for the phone's home screen. */
     private fun goHome() {
         startActivity(
             Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
@@ -92,6 +94,7 @@ class PauseActivity : ComponentActivity() {
         finish()
     }
 
+    /** Only after 21 (bought) and 22 (used a heart): back to the shop with a 15-minute quiet window. */
     private fun continueToShop() {
         if (demo) {
             finish() // demo pause: just go back to Cachew

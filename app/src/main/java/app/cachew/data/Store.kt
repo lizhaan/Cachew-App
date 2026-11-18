@@ -7,13 +7,15 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.serialization.json.Json
+import java.time.LocalDate
+import java.time.YearMonth
 
 /**
  * The app's single data repository: SharedPreferences, with lists stored as JSON strings.
  * One instance per process (Store.get). Values the UI watches are exposed as StateFlows, so
  * every screen sees a change immediately (e.g. an app added in the picker shows up in the grid).
  *
- * Later stages add nuts, streak, hearts, pause log, waiting list, night shield here.
+ * Later stages add the night shield here.
  */
 class Store private constructor(private val prefs: SharedPreferences) {
 
@@ -62,6 +64,100 @@ class Store private constructor(private val prefs: SharedPreferences) {
         return runCatching { Json.decodeFromString<Map<String, Long>>(raw) }.getOrDefault(emptyMap())
     }
 
+    // --- Game: nuts, streak, hearts, pause log, waiting list -------------------------
+    // Rules live in Game.kt; Store only keeps the raw facts (dates, counts, lists).
+
+    /** Bumped after every game change, so screens that show counters can refresh. */
+    private val _gameVersion = MutableStateFlow(0)
+    val gameVersion: StateFlow<Int> = _gameVersion.asStateFlow()
+
+    /** Default "Wait for" choice (Me → Waiting time in stage 6). */
+    var defaultWaitHours: Int
+        get() = prefs.getInt(KEY_WAIT_HOURS, 48)
+        set(value) = prefs.edit { putInt(KEY_WAIT_HOURS, value) }
+
+    /** Currency for new items (a Me setting later); defaults to the phone's region. */
+    var currency: String
+        get() = prefs.getString(KEY_CURRENCY, null) ?: Money.defaultCurrency()
+        set(value) = prefs.edit { putString(KEY_CURRENCY, value) }
+
+    fun snapshot(today: LocalDate = LocalDate.now()): GameSnapshot = GameSnapshot(
+        nuts = prefs.getInt(KEY_NUTS, 0),
+        streak = Game.streak(today, firstDay, lastBuyAnywayDay),
+        heartsLeft = heartsLeft(today),
+        heartsRefill = Game.heartsRefillDate(today),
+        boughtAnywayToday = lastBuyAnywayDay == today,
+        waiting = waitItems().filter { it.status == WaitItem.Status.Waiting },
+    )
+
+    fun waitItems(): List<WaitItem> = readList(KEY_ITEMS)
+
+    fun pauseLog(): List<PauseRecord> = readList(KEY_LOG)
+
+    /**
+     * "Add to waiting list" + "Wait N hours" / "Skip": +15 nuts, ticks today's quest,
+     * logs the pause and saves the item. No quiet window here (the pause should come back).
+     */
+    fun addToWaitingList(record: PauseRecord, item: WaitItem, today: LocalDate = LocalDate.now()): RewardInfo {
+        val questDone = prefs.getLong(KEY_QUEST_DAY, NO_DAY) != today.toEpochDay()
+        prefs.edit {
+            putInt(KEY_NUTS, prefs.getInt(KEY_NUTS, 0) + Game.NUTS_PER_PAUSE)
+            putLong(KEY_QUEST_DAY, today.toEpochDay())
+            putString(KEY_ITEMS, Json.encodeToString(waitItems() + item))
+            putString(KEY_LOG, Json.encodeToString(pauseLog() + record))
+        }
+        changed()
+        return RewardInfo(Game.NUTS_PER_PAUSE, Game.streak(today, firstDay, lastBuyAnywayDay), questDone, item)
+    }
+
+    /** "Use a heart": one heart less this month, streak untouched. */
+    fun useHeart(record: PauseRecord, today: LocalDate = LocalDate.now()) {
+        val month = YearMonth.from(today).toString()
+        val usedThisMonth = if (prefs.getString(KEY_HEARTS_MONTH, null) == month) prefs.getInt(KEY_HEARTS_USED, 0) else 0
+        prefs.edit {
+            putString(KEY_HEARTS_MONTH, month)
+            putInt(KEY_HEARTS_USED, usedThisMonth + 1)
+            putString(KEY_LOG, Json.encodeToString(pauseLog() + record))
+        }
+        changed()
+    }
+
+    /** "Buy it anyway": the streak starts again from today. */
+    fun buyAnyway(record: PauseRecord, today: LocalDate = LocalDate.now()) {
+        prefs.edit {
+            putLong(KEY_LAST_BUY_ANYWAY, today.toEpochDay())
+            putString(KEY_LOG, Json.encodeToString(pauseLog() + record))
+        }
+        changed()
+    }
+
+    fun heartsLeft(today: LocalDate = LocalDate.now()): Int {
+        val month = prefs.getString(KEY_HEARTS_MONTH, null)?.let { runCatching { YearMonth.parse(it) }.getOrNull() }
+        return Game.heartsLeft(YearMonth.from(today), month, prefs.getInt(KEY_HEARTS_USED, 0))
+    }
+
+    /** First day of using Cachew; the streak counts from here until the first "Buy it anyway". */
+    private val firstDay: LocalDate
+        get() {
+            val stored = prefs.getLong(KEY_FIRST_DAY, NO_DAY)
+            if (stored != NO_DAY) return LocalDate.ofEpochDay(stored)
+            val today = LocalDate.now()
+            prefs.edit { putLong(KEY_FIRST_DAY, today.toEpochDay()) }
+            return today
+        }
+
+    private val lastBuyAnywayDay: LocalDate?
+        get() = prefs.getLong(KEY_LAST_BUY_ANYWAY, NO_DAY).takeIf { it != NO_DAY }?.let(LocalDate::ofEpochDay)
+
+    private fun changed() {
+        _gameVersion.value += 1
+    }
+
+    private inline fun <reified T> readList(key: String): List<T> {
+        val raw = prefs.getString(key, null) ?: return emptyList()
+        return runCatching { Json.decodeFromString<List<T>>(raw) }.getOrDefault(emptyList())
+    }
+
     private fun readPackages(): Set<String> {
         val raw = prefs.getString(KEY_SELECTED, null) ?: return emptySet()
         return runCatching { Json.decodeFromString<List<String>>(raw) }.getOrDefault(emptyList()).toCollection(LinkedHashSet())
@@ -74,6 +170,18 @@ class Store private constructor(private val prefs: SharedPreferences) {
         private const val KEY_QUIET = "quiet_until"
         // v2: the card gained the Autostart step, so show it again to people who dismissed v1.
         private const val KEY_XIAOMI_POPUPS = "xiaomi_steps_done_v2"
+
+        private const val KEY_WAIT_HOURS = "default_wait_hours"
+        private const val KEY_CURRENCY = "currency"
+        private const val KEY_NUTS = "nuts"
+        private const val KEY_FIRST_DAY = "first_day"
+        private const val KEY_LAST_BUY_ANYWAY = "last_buy_anyway_day"
+        private const val KEY_HEARTS_MONTH = "hearts_month"
+        private const val KEY_HEARTS_USED = "hearts_used"
+        private const val KEY_QUEST_DAY = "quest_pause_day"
+        private const val KEY_ITEMS = "wait_items"
+        private const val KEY_LOG = "pause_log"
+        private const val NO_DAY = Long.MIN_VALUE
 
         const val QUIET_MINUTES = 15
 

@@ -3,6 +3,7 @@ package app.cachew.ui.components
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
@@ -31,6 +32,7 @@ fun GlassCard(
     contentPadding: PaddingValues = PaddingValues(CachewSize.CardPadding),
     horizontalAlignment: Alignment.Horizontal = Alignment.Start,
     onClick: (() -> Unit)? = null,
+    onLongClick: (() -> Unit)? = null,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     val shape = RoundedCornerShape(radius)
@@ -46,7 +48,11 @@ fun GlassCard(
         m.background(CachewColors.CardFill)
             .border(CachewSize.BorderWidth, CachewColors.CardBorder, shape)
     }
-    if (onClick != null) m = m.clickable(onClick = onClick)
+    if (onLongClick != null) {
+        m = m.combinedClickable(onClick = onClick ?: {}, onLongClick = onLongClick)
+    } else if (onClick != null) {
+        m = m.clickable(onClick = onClick)
+    }
     Column(
         modifier = m.padding(contentPadding),
         horizontalAlignment = horizontalAlignment,

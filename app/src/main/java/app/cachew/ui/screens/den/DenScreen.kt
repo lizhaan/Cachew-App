@@ -33,7 +33,11 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.cachew.R
+import app.cachew.data.Money
 import app.cachew.data.ShopApps
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.runtime.mutableIntStateOf
+import app.cachew.ui.components.StatCard
 import app.cachew.data.ShopLabels
 import app.cachew.data.Store
 import app.cachew.pause.PauseActivity
@@ -67,6 +71,12 @@ fun DenScreen(onEditShops: () -> Unit, onTurnOn: () -> Unit) {
         value = selected.map { ShopLabels.load(context, it).name }
     }
 
+    // Counters: recomputed after every game change and when the den comes back (the date may have changed).
+    val gameVersion by store.gameVersion.collectAsStateWithLifecycle()
+    var resumes by remember { mutableIntStateOf(0) }
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { resumes++ }
+    val game = remember(gameVersion, resumes) { store.snapshot() }
+
     CachewBackground {
         Column(
             Modifier
@@ -79,8 +89,30 @@ fun DenScreen(onEditShops: () -> Unit, onTurnOn: () -> Unit) {
             Text(stringResource(R.string.den_greeting), style = CachewType.Body, color = CachewColors.TextSecondary)
             Text(stringResource(R.string.den_title), style = CachewType.H1, color = CachewColors.Title)
             Spacer(Modifier.height(16.dp))
-            Penny(PennyPose.Look, 180.dp, Modifier.align(Alignment.CenterHorizontally))
+            // After "Buy it anyway" Cachew sits with its back turned until the end of the day.
+            Penny(if (game.boughtAnywayToday) PennyPose.Back else PennyPose.Look, 180.dp, Modifier.align(Alignment.CenterHorizontally))
             Spacer(Modifier.height(16.dp))
+
+            Row(horizontalArrangement = Arrangement.spacedBy(CachewSize.Gap)) {
+                StatCard(game.streak.toString(), stringResource(R.string.stat_streak), Modifier.weight(1f), R.drawable.ic_flame)
+                StatCard(game.nuts.toString(), stringResource(R.string.den_nuts), Modifier.weight(1f), R.drawable.ic_cashew)
+                StatCard(game.heartsLeft.toString(), stringResource(R.string.stat_hearts_left), Modifier.weight(1f), R.drawable.ic_heart)
+            }
+            Spacer(Modifier.height(CachewSize.Gap))
+
+            GlassCard(Modifier.fillMaxWidth()) {
+                Text(stringResource(R.string.den_waiting_label).uppercase(), style = CachewType.Label, color = CachewColors.PurpleText)
+                Spacer(Modifier.height(8.dp))
+                if (game.waiting.isEmpty()) {
+                    Text(stringResource(R.string.den_waiting_empty), style = CachewType.Body, color = CachewColors.TextSecondary)
+                }
+                game.waiting.forEach { item ->
+                    val price = item.price?.let { " · " + Money.format(it, item.currency) }.orEmpty()
+                    val hoursLeft = ((item.dueAt - System.currentTimeMillis()) / 3_600_000L).coerceAtLeast(0)
+                    Text("${item.title}$price · ${hoursLeft}h left", style = CachewType.Body, color = CachewColors.Text)
+                }
+            }
+            Spacer(Modifier.height(CachewSize.Gap))
 
             ServiceCard(state = serviceState, onTurnOn = onTurnOn)
             Spacer(Modifier.height(CachewSize.Gap))

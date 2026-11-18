@@ -43,6 +43,7 @@
             android:taskAffinity="app.cachew.pause"
             android:screenOrientation="portrait"
             android:theme="@style/Theme.Cachew.Night"
+            android:windowSoftInputMode="adjustResize"
             tools:ignore="DiscouragedApi,LockedOrientationActivity" />
 
         <!-- Notices which app comes to the front (package name only). Only the system can bind to it. -->
