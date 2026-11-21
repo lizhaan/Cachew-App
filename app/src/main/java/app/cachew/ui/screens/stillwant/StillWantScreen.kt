@@ -119,11 +119,13 @@ private fun shopLabelOf(item: WaitItem): ShopLabel {
     return ShopLabel(name, TileIcon.Letter(name.take(1).uppercase(), CachewColors.Purple))
 }
 
-/** After "Buy it with a heart": off to the shop to buy it, without a pause getting in the way. */
+/**
+ * After "Buy it with a heart": off to the shop.
+ * TODO(stage 4): one "Buy it" button → short 10 s pause → the item's link, with a 5-minute buy session.
+ */
 private fun openShop(context: Context, pkg: String) {
     if (pkg.isEmpty()) return
     val launch = context.packageManager.getLaunchIntentForPackage(pkg) ?: return
-    Store.get(context).startQuiet(pkg)
     context.startActivity(launch)
 }
 

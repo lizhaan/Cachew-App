@@ -14,11 +14,16 @@ import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import android.widget.Toast
+import app.cachew.R
+import app.cachew.data.EntryAction
+import app.cachew.data.PauseRecord
+import app.cachew.data.SessionMode
 import app.cachew.data.Store
 import app.cachew.ui.theme.CachewTheme
 
 /**
- * The pause that opens on top of a shop (screen 13, then the temporary "after" screen).
+ * The pause that opens on top of a shop: countdown, two questions, choice screen.
  *
  * Manifest setup and why:
  *  - taskAffinity="app.cachew.pause": lives in its own task, so it doesn't drag the den along
@@ -41,7 +46,11 @@ class PauseActivity : ComponentActivity() {
             navigationBarStyle = SystemBarStyle.dark(Color.TRANSPARENT),
         )
         // Back must not drop the user into the shop: send them to the phone's home screen.
-        onBackPressedDispatcher.addCallback(this) { goHome() }
+        // It still counts as a pause in the log (for Stats), with no answers.
+        onBackPressedDispatcher.addCallback(this) {
+            if (!demo) Store.get(this@PauseActivity).logPause(PauseRecord(openedAt, shopPackage, null, null, EntryAction.Left))
+            goHome()
+        }
 
         setContent {
             CachewTheme {
@@ -50,9 +59,8 @@ class PauseActivity : ComponentActivity() {
                     PauseFlow(
                         shopPackage = shopPackage,
                         openedAt = openedAt,
-                        onGoHome = ::goHome,
-                        onBackToDen = ::backToDen,
-                        onContinueToShop = ::continueToShop,
+                        onStartSession = ::startSession,
+                        onClose = ::closeShop,
                     )
                 }
             }
@@ -81,7 +89,7 @@ class PauseActivity : ComponentActivity() {
         showingFor = shopPackage
     }
 
-    /** Back button and screen 17's button: leave the shop for the phone's home screen. */
+    /** Leave the shop for the phone's home screen. */
     private fun goHome() {
         startActivity(
             Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
@@ -89,22 +97,30 @@ class PauseActivity : ComponentActivity() {
         finish()
     }
 
-    private fun backToDen() {
-        packageManager.getLaunchIntentForPackage(packageName)?.let(::startActivity)
-        finish()
-    }
-
-    /** Only after 21 (bought) and 22 (used a heart): back to the shop with a 15-minute quiet window. */
-    private fun continueToShop() {
-        if (demo) {
-            finish() // demo pause: just go back to Cachew
+    /**
+     * "Just look" / "I need something specific": save the session, then bring the shop back.
+     * From here ShopWatchService takes over: it sees the shop in front, finds the running session
+     * (so no new pause) and draws the timer pill and Penny's circle on top.
+     */
+    private fun startSession(record: PauseRecord, mode: SessionMode) {
+        val launch = packageManager.getLaunchIntentForPackage(shopPackage)
+        if (demo && launch == null) {
+            finish() // demo with a shop that isn't installed: nothing to open, back to Cachew
             return
         }
-        Store.get(this).startQuiet(shopPackage)
-        val launch = packageManager.getLaunchIntentForPackage(shopPackage)
+        Store.get(this).startSession(record, mode)
         finish()
         // Brings the shop's existing task to the front (or starts it).
         launch?.let(::startActivity)
+    }
+
+    /** "Close <shop>": +5 cashews (if today's limit allows), then the phone's home screen. */
+    private fun closeShop(record: PauseRecord) {
+        val store = Store.get(this)
+        store.logPause(record)
+        val earned = store.rewardClose()
+        if (earned > 0) Toast.makeText(this, getString(R.string.close_reward_toast, earned), Toast.LENGTH_SHORT).show()
+        if (demo) finish() else goHome()
     }
 
     companion object {

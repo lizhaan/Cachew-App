@@ -73,34 +73,43 @@
     <string name="no">No</string>
     <string name="questions_continue">Continue</string>
 
-    <!-- 15 Decision. The headline is built from parts: "Tired, late, not on your list." -->
-    <string name="part_tired">tired</string>
-    <string name="part_bored">bored</string>
-    <string name="part_stressed">stressed</string>
-    <string name="part_late">late</string>
-    <string name="part_not_on_list">not on your list</string>
-    <string name="decision_headline_end">%1$s.</string>
-    <string name="decision_headline_but_on_list">%1$s, but on your list.</string>
-    <string name="decision_all_good">On your list and feeling fine.</string>
-    <string name="decision_body_risky">Those are usually the buys you regret. Want to let it wait?</string>
-    <string name="decision_body_planned">Sounds planned. A short wait still never hurts.</string>
-    <string name="decision_wait_title">Add to waiting list</string>
-    <string name="decision_wait_body">Tell Penny what it was. We\'ll ask again later.</string>
-    <string name="decision_heart_title">Use a heart</string>
-    <string name="decision_heart_body">A planned treat. No guilt, no streak loss.</string>
-    <string name="decision_heart_empty">No hearts left. They refill %1$s.</string>
-    <string name="decision_buy_anyway">Buy it anyway</string>
+    <!-- Choice screen (design-v2/02). Headline from the quiz answers; %1$s = mood word ("Tired"). -->
+    <string name="headline_mood_scrolling">%1$s, just scrolling.</string>
+    <string name="headline_mood_on_list">%1$s, but on your list.</string>
+    <string name="headline_fine_scrolling">Feeling fine, just scrolling.</string>
+    <string name="headline_all_good">On your list and feeling fine.</string>
+    <string name="choice_body_risky">That\'s when most regret buys happen. What\'s the plan?</string>
+    <string name="choice_body_planned">Sounds planned. What\'s the plan?</string>
+    <string name="choice_look_title">Just look, save, don\'t buy</string>
+    <string name="choice_look_tag">per saved item</string>
+    <string name="choice_look_body">%1$s opens for %2$d min. Like something? Save it to Cachew, it waits %3$dh.</string>
+    <string name="choice_specific_title">I need something specific</string>
+    <string name="choice_specific_body">Get it and go. Penny waits in the corner and peeks in once.</string>
+    <string name="choice_minutes_tag">%1$d min</string>
+    <string name="choice_close">Close %1$s</string>
+    <string name="close_reward_toast">+%1$d cashews for Penny\'s stash</string>
 
-    <!-- What did you want? (after Add to waiting list) -->
-    <string name="item_label">Waiting list · %1$s</string>
-    <string name="item_title">What did you want?</string>
+    <!-- Session on top of the shop (design-v2/03, 04) -->
+    <string name="session_pill">%1$s left · %2$s</string>
+    <string name="session_mode_look">just looking</string>
+    <string name="session_mode_specific">specific</string>
+    <string name="session_penny_hint">Like something? Tap me</string>
+    <string name="session_share_hint">Tap Share → Cachew</string>
+    <string name="session_two_minutes">2 minutes left</string>
+    <string name="checkin_title">%1$d minutes in. How\'s it going?</string>
+    <string name="checkin_body">Just checking. You decide, Penny cheers.</string>
+    <string name="checkin_save_title">I found something → save it</string>
+    <string name="checkin_save_body">Share it to Cachew, it waits %1$dh · +%2$d</string>
+    <string name="checkin_more">Still looking · %1$d more min</string>
+    <string name="checkin_done">I\'m done · close %1$s</string>
+
+    <!-- Share item card (16) -->
     <string name="item_name_hint">e.g. Chunky knit sweater</string>
     <string name="item_price_hint">Price (optional)</string>
     <string name="item_wait_for">Wait for</string>
     <string name="item_hours_short">%1$dh</string>
     <string name="item_wait_button">Wait %1$d hours</string>
     <string name="item_wait_button_minute">Wait 1 minute (test)</string>
-    <string name="item_skip">Skip</string>
     <string name="item_tip">Most late-night wants feel different after a day or two. If you still want it, it\'s yours.</string>
     <string name="item_default_name">Something from %1$s</string>
 

@@ -1,6 +1,6 @@
 package app.cachew.data
 
-import app.cachew.data.Game.Part
+import app.cachew.data.Game.Headline
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -77,21 +77,23 @@ class GameTest {
     // ---- Decision headline -------------------------------------------------------
 
     @Test fun headline_mockupCase() {
-        // "Tired, late, not on your list."
-        assertEquals(listOf(Part.Tired, Part.Late, Part.NotOnList), Game.headlineParts(Mood.Tired, onList = false, night = true))
+        // "Tired, just scrolling."
+        assertEquals(Headline.MoodScrolling, Game.headline(Mood.Tired, onList = false))
+        assertTrue(Game.isRisky(Mood.Tired, onList = false))
     }
 
     @Test fun headline_allGood() {
         // "On your list and feeling fine."
-        assertEquals(emptyList<Part>(), Game.headlineParts(Mood.Fine, onList = true, night = false))
+        assertEquals(Headline.AllGood, Game.headline(Mood.Fine, onList = true))
+        assertFalse(Game.isRisky(Mood.Fine, onList = true))
     }
 
     @Test fun headline_fineButNotOnList() {
-        assertEquals(listOf(Part.NotOnList), Game.headlineParts(Mood.Fine, onList = false, night = false))
+        assertEquals(Headline.FineScrolling, Game.headline(Mood.Fine, onList = false))
     }
 
     @Test fun headline_stressedButOnList() {
-        assertEquals(listOf(Part.Stressed), Game.headlineParts(Mood.Stressed, onList = true, night = false))
+        assertEquals(Headline.MoodButOnList, Game.headline(Mood.Stressed, onList = true))
     }
 
     // ---- Reminders: only in the daytime ------------------------------------------

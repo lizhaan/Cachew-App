@@ -7,14 +7,11 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
@@ -26,19 +23,19 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -46,20 +43,14 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import app.cachew.R
-import app.cachew.data.Decision
-import app.cachew.data.Game
+import app.cachew.data.EntryAction
 import app.cachew.data.Mood
 import app.cachew.data.PauseRecord
-import app.cachew.data.RewardInfo
+import app.cachew.data.Rules
+import app.cachew.data.SessionMode
 import app.cachew.data.ShopLabel
 import app.cachew.data.ShopLabels
 import app.cachew.data.Store
-import app.cachew.data.WaitItem
-import app.cachew.reminders.Reminders
-import app.cachew.ui.components.rememberNotificationAsker
-import java.time.Instant
-import java.time.ZoneId
-import java.util.UUID
 import app.cachew.ui.components.CachewBackground
 import app.cachew.ui.components.Penny
 import app.cachew.ui.components.PennyPose
@@ -69,31 +60,31 @@ import app.cachew.ui.theme.CachewColors
 import app.cachew.ui.theme.CachewSize
 import app.cachew.ui.theme.CachewType
 import app.cachew.ui.theme.Inter
+import java.time.Instant
+import java.time.ZoneId
 import java.util.Date
 import kotlin.math.ceil
 
-private const val PAUSE_SECONDS = app.cachew.data.Rules.PAUSE_SECONDS
+private const val PAUSE_SECONDS = Rules.PAUSE_SECONDS
 
 /** The steps of one pause. Saved as an enum so it survives the activity being recreated. */
-private enum class Step { Countdown, Questions, Decision, Item, Reward, HeartUsed, Bought }
+private enum class Step { Countdown, Questions, Decision }
 
 /**
- * One whole pause, step by step:
- * 13 countdown → 14 questions → 15 decision →
- *   Add to waiting list → "What did you want?" → 17 reward → close the shop (phone home)
- *   Use a heart → 22 → den / continue to shop (quiet window)
- *   Buy it anyway → 21 → back to shop (quiet window) / den
+ * One whole pause, step by step (v2):
+ * 13 countdown (10 s) → 14 questions → choice screen →
+ *   "Just look" / "I need something specific" → the shop opens for a 10-minute session
+ *   "Close <shop>" → +5 cashews (max 3 a day), phone's home screen
  *
- * Store changes happen only on the final button of a branch, so backing out halfway
- * (Back = phone home screen) changes nothing.
+ * The Store changes only on the final choice, so backing out halfway changes nothing
+ * (PauseActivity logs that as "Left").
  */
 @Composable
 fun PauseFlow(
     shopPackage: String,
     openedAt: Long,
-    onGoHome: () -> Unit,
-    onBackToDen: () -> Unit,
-    onContinueToShop: () -> Unit,
+    onStartSession: (PauseRecord, SessionMode) -> Unit,
+    onClose: (PauseRecord) -> Unit,
 ) {
     val context = LocalContext.current
     val store = remember { Store.get(context) }
@@ -101,24 +92,21 @@ fun PauseFlow(
     val shopName = label?.name ?: ShopLabels.quickName(shopPackage)
 
     // Night is decided once, when the shop was opened, by the night shield's schedule.
-    val shield = remember { store.nightShield }
+    // (Stage 5 replaces the night pause with a full block.)
     val night = remember(openedAt) {
-        shield.isNight(Instant.ofEpochMilli(openedAt).atZone(ZoneId.systemDefault()).toLocalTime())
+        store.nightShield.isNight(Instant.ofEpochMilli(openedAt).atZone(ZoneId.systemDefault()).toLocalTime())
     }
 
     var step by rememberSaveable { mutableStateOf(Step.Countdown) }
     var mood by rememberSaveable { mutableStateOf<Mood?>(null) }
     var onList by rememberSaveable { mutableStateOf<Boolean?>(null) }
-    var reward by remember { mutableStateOf<RewardInfo?>(null) }
-    val askNotifications = rememberNotificationAsker()
 
-    fun record(decision: Decision) = PauseRecord(
-        at = openedAt, shopPackage = shopPackage, mood = mood ?: Mood.Fine,
-        onList = onList ?: false, night = night, decision = decision,
+    fun record(action: EntryAction) = PauseRecord(
+        at = openedAt, shopPackage = shopPackage, mood = mood, onList = onList, action = action,
     )
 
-    // 22 "Used a heart" is the one day-background screen in the flow (as in the mockups).
-    CachewBackground(night = step != Step.HeartUsed) {
+    // Pause, questions and choice always use the night background, to stand apart from the shop.
+    CachewBackground(night = true) {
         when (step) {
             Step.Countdown -> PauseCountdown(
                 label = label, shopName = shopName, openedAt = openedAt, night = night,
@@ -129,61 +117,20 @@ fun PauseFlow(
                 onMood = { mood = it }, onOnList = { onList = it },
                 onContinue = { step = Step.Decision },
             )
-            Step.Decision -> {
-                val game = remember { store.snapshot() }
-                DecisionScreen(
-                    mood = mood ?: Mood.Fine, onList = onList ?: false, night = night,
-                    heartsLeft = game.heartsLeft, heartsRefill = game.heartsRefill,
-                    // Strict at night: no "Buy it anyway", just "no buy anyway until 07:00".
-                    noBuyAnywayUntil = if (shield.blocksBuyAnyway(night)) shield.to else null,
-                    onWait = { step = Step.Item },
-                    onHeart = {
-                        store.useHeart(record(Decision.Heart))
-                        step = Step.HeartUsed
-                    },
-                    onBuyAnyway = {
-                        store.buyAnyway(record(Decision.Bought))
-                        step = Step.Bought
-                    },
-                )
-            }
-            Step.Item -> ItemEntryScreen(
-                shop = label, shopName = shopName, currency = store.currency, defaultWaitHours = store.defaultWaitHours,
-                onSave = { name, price, waitMillis ->
-                    val item = WaitItem(
-                        id = UUID.randomUUID().toString(),
-                        title = name ?: context.getString(R.string.item_default_name, shopName),
-                        price = price,
-                        currency = store.currency,
-                        shopPackage = shopPackage,
-                        addedAt = System.currentTimeMillis(),
-                        waitMillis = waitMillis,
-                    )
-                    reward = store.addToWaitingList(record(Decision.Waiting), item)
-                    Reminders.schedule(context, item)
-                    askNotifications { step = Step.Reward }
-                },
-            )
-            Step.Reward -> {
-                val r = reward
-                if (r != null) {
-                    RewardScreen(r, night = night, onClose = onGoHome)
-                } else {
-                    // Only if the activity was recreated mid-flow: nothing left to show.
-                    LaunchedEffect(Unit) { onGoHome() }
-                }
-            }
-            Step.HeartUsed -> HeartUsedScreen(
-                game = remember { store.snapshot() }, shopName = shopName,
-                onBackToDen = onBackToDen, onContinueToShop = onContinueToShop,
-            )
-            Step.Bought -> BoughtScreen(
-                game = remember { store.snapshot() },
-                onBackToShop = onContinueToShop, onBackToDen = onBackToDen,
+            Step.Decision -> DecisionScreen(
+                mood = mood ?: Mood.Fine,
+                onList = onList ?: false,
+                shopName = shopName,
+                waitHours = store.defaultWaitHours,
+                closeRewardLeft = remember { store.closeRewardLeft() },
+                onJustLook = { onStartSession(record(EntryAction.JustLook), SessionMode.JustLook) },
+                onSpecific = { onStartSession(record(EntryAction.Specific), SessionMode.Specific) },
+                onClose = { onClose(record(EntryAction.Closed)) },
             )
         }
     }
 }
+
 
 @Composable
 private fun PauseCountdown(label: ShopLabel?, shopName: String, openedAt: Long, night: Boolean, onAnswer: () -> Unit) {

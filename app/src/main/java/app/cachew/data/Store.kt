@@ -39,7 +39,16 @@ class Store private constructor(private val prefs: SharedPreferences) {
             }
             version = 1
         }
-        // Stage 3 (v2) adds step 2 here: the pause log gets a new format.
+        if (version < 2) {
+            // v2: the pause log has a new format (choice + session length instead of v1 decisions),
+            // and v1's quiet windows and daily quest are gone.
+            prefs.edit {
+                remove(KEY_LOG)
+                remove("quiet_until")
+                remove("quest_pause_day")
+            }
+            version = 2
+        }
         prefs.edit {
             putInt(KEY_DATA_VERSION, version)
             remove(KEY_USD_MIGRATED)
@@ -70,26 +79,69 @@ class Store private constructor(private val prefs: SharedPreferences) {
         get() = prefs.getBoolean(KEY_XIAOMI_POPUPS, false)
         set(value) = prefs.edit { putBoolean(KEY_XIAOMI_POPUPS, value) }
 
-    // --- Quiet windows -------------------------------------------------------------
-    // After "Continue to <shop>" we leave that shop alone for a while, otherwise the
-    // pause would pop up again the moment the shop comes back to the front.
+    // --- Shop session (stage 3) -------------------------------------------------------
+    // After "Just look" / "I need something specific" the shop is open for 10 minutes.
+    // Saved here (not only in the service's memory) so it survives the service restarting.
 
-    /** True if [packageName] is inside its quiet window right now. */
-    fun isQuiet(packageName: String, now: Long = System.currentTimeMillis()): Boolean =
-        (readQuiet()[packageName] ?: 0L) > now
+    /** The running session, or null. Expired sessions are still returned until [endSession]. */
+    val session: ShopSession?
+        get() = prefs.getString(KEY_SESSION, null)?.let { runCatching { Json.decodeFromString<ShopSession>(it) }.getOrNull() }
 
-    /** Don't pause [packageName] for the next [QUIET_MINUTES] minutes. */
-    fun startQuiet(packageName: String, now: Long = System.currentTimeMillis()) {
-        // Drop expired entries so the map doesn't grow forever.
-        val map = readQuiet().filterValues { it > now }.toMutableMap()
-        map[packageName] = now + QUIET_MINUTES * 60_000L
-        prefs.edit { putString(KEY_QUIET, Json.encodeToString(map)) }
+    /** The running, not yet expired session for [packageName], if any. */
+    fun activeSession(packageName: String, now: Long = System.currentTimeMillis()): ShopSession? =
+        session?.takeIf { it.shopPackage == packageName && now < it.endsAt }
+
+    fun saveSession(value: ShopSession) = prefs.edit { putString(KEY_SESSION, Json.encodeToString(value)) }
+
+    /** Starts a session: [record] (the pause that led to it) goes into the log, its duration is filled in at the end. */
+    fun startSession(record: PauseRecord, mode: SessionMode, now: Long = System.currentTimeMillis()): ShopSession {
+        val s = ShopSession(
+            shopPackage = record.shopPackage, mode = mode, openedAt = record.at,
+            startedAt = now, endsAt = now + Rules.SESSION_MINUTES * 60_000L,
+        )
+        prefs.edit {
+            putString(KEY_SESSION, Json.encodeToString(s))
+            putString(KEY_LOG, Json.encodeToString(pauseLog() + record))
+        }
+        changed()
+        return s
     }
 
-    private fun readQuiet(): Map<String, Long> {
-        val raw = prefs.getString(KEY_QUIET, null) ?: return emptyMap()
-        return runCatching { Json.decodeFromString<Map<String, Long>>(raw) }.getOrDefault(emptyMap())
+    /** Ends the session (time up or "I'm done") and writes how long it lasted into its log entry. */
+    fun endSession(now: Long = System.currentTimeMillis()) {
+        val s = session ?: return
+        val lasted = minOf(now, s.endsAt) - s.startedAt
+        val log = pauseLog().map { if (it.at == s.openedAt && it.shopPackage == s.shopPackage) it.copy(sessionMillis = lasted) else it }
+        prefs.edit {
+            remove(KEY_SESSION)
+            putString(KEY_LOG, Json.encodeToString(log))
+        }
+        changed()
     }
+
+    /** A pause that didn't start a session ("Close <shop>", or Back during the pause). */
+    fun logPause(record: PauseRecord) {
+        prefs.edit { putString(KEY_LOG, Json.encodeToString(pauseLog() + record)) }
+        changed()
+    }
+
+    /** Would "Close <shop>" still earn cashews today (+5, at most 3 times a day)? */
+    fun closeRewardLeft(today: LocalDate = LocalDate.now()): Boolean = closesRewardedOn(today) < Rules.REWARDED_CLOSES_PER_DAY
+
+    /** "Close <shop>" / "I'm done": +5 cashews unless today's limit is used up. Returns the cashews added (0 or 5). */
+    fun rewardClose(today: LocalDate = LocalDate.now()): Int {
+        if (!closeRewardLeft(today)) return 0
+        prefs.edit {
+            putLong(KEY_CLOSE_DAY, today.toEpochDay())
+            putInt(KEY_CLOSE_COUNT, closesRewardedOn(today) + 1)
+            putInt(KEY_CASHEWS, cashews + Rules.CASHEWS_PER_CLOSE)
+        }
+        changed()
+        return Rules.CASHEWS_PER_CLOSE
+    }
+
+    private fun closesRewardedOn(today: LocalDate): Int =
+        if (prefs.getLong(KEY_CLOSE_DAY, NO_DAY) == today.toEpochDay()) prefs.getInt(KEY_CLOSE_COUNT, 0) else 0
 
     // --- Game: cashews, streak, hearts, pause log, waiting list -------------------------
     // Rules live in Game.kt; Store only keeps the raw facts (dates, counts, lists).
@@ -138,30 +190,6 @@ class Store private constructor(private val prefs: SharedPreferences) {
     fun waitItems(): List<WaitItem> = readList(KEY_ITEMS)
 
     fun pauseLog(): List<PauseRecord> = readList(KEY_LOG)
-
-    /**
-     * "Add to waiting list" + "Wait N hours" / "Skip": +15 cashews, ticks today's quest,
-     * logs the pause and saves the item. No quiet window here (the pause should come back).
-     * (v1 flow; stage 3 replaces it.)
-     */
-    fun addToWaitingList(record: PauseRecord, item: WaitItem, today: LocalDate = LocalDate.now()): RewardInfo {
-        val questDone = prefs.getLong(KEY_QUEST_DAY, NO_DAY) != today.toEpochDay()
-        prefs.edit {
-            putInt(KEY_CASHEWS, cashews + Game.CASHEWS_PER_PAUSE)
-            putLong(KEY_QUEST_DAY, today.toEpochDay())
-            putString(KEY_ITEMS, Json.encodeToString(waitItems() + item))
-            putString(KEY_LOG, Json.encodeToString(pauseLog() + record))
-        }
-        changed()
-        return RewardInfo(Game.CASHEWS_PER_PAUSE, Game.streak(today, firstDay, lastBuyAnywayDay), questDone, item)
-    }
-
-    /** "Use a heart": one heart less this month, streak untouched. */
-    fun useHeart(record: PauseRecord, today: LocalDate = LocalDate.now()) {
-        spendHeart(today)
-        prefs.edit { putString(KEY_LOG, Json.encodeToString(pauseLog() + record)) }
-        changed()
-    }
 
     private fun spendHeart(today: LocalDate) {
         val month = YearMonth.from(today).toString()
@@ -248,12 +276,9 @@ class Store private constructor(private val prefs: SharedPreferences) {
     private fun epochToDate(millis: Long): LocalDate =
         java.time.Instant.ofEpochMilli(millis).atZone(java.time.ZoneId.systemDefault()).toLocalDate()
 
-    /** "Buy it anyway": the streak starts again from today. */
-    fun buyAnyway(record: PauseRecord, today: LocalDate = LocalDate.now()) {
-        prefs.edit {
-            putLong(KEY_LAST_BUY_ANYWAY, today.toEpochDay())
-            putString(KEY_LOG, Json.encodeToString(pauseLog() + record))
-        }
+    /** "I already bought it" (stage 4): the streak starts again from today. */
+    fun alreadyBought(today: LocalDate = LocalDate.now()) {
+        prefs.edit { putLong(KEY_LAST_BUY_ANYWAY, today.toEpochDay()) }
         changed()
     }
 
@@ -295,7 +320,9 @@ class Store private constructor(private val prefs: SharedPreferences) {
         private const val PREFS = "cachew"
         private const val KEY_SELECTED = "selected_packages"
         private const val KEY_ONBOARDING_DONE = "onboarding_done"
-        private const val KEY_QUIET = "quiet_until"
+        private const val KEY_SESSION = "session"
+        private const val KEY_CLOSE_DAY = "close_reward_day"
+        private const val KEY_CLOSE_COUNT = "close_reward_count"
         // v2: the card gained the Autostart step, so show it again to people who dismissed v1.
         private const val KEY_XIAOMI_POPUPS = "xiaomi_steps_done_v2"
 
@@ -308,7 +335,6 @@ class Store private constructor(private val prefs: SharedPreferences) {
         private const val KEY_LAST_BUY_ANYWAY = "last_buy_anyway_day"
         private const val KEY_HEARTS_MONTH = "hearts_month"
         private const val KEY_HEARTS_USED = "hearts_used"
-        private const val KEY_QUEST_DAY = "quest_pause_day"
         private const val KEY_ITEMS = "wait_items"
         private const val KEY_LOG = "pause_log"
         private const val KEY_USD_MIGRATED = "usd_migrated_v1"
@@ -318,8 +344,6 @@ class Store private constructor(private val prefs: SharedPreferences) {
         private const val KEY_SHIELD_TO = "shield_to_min"
         private const val KEY_SHIELD_STRICT = "shield_strict"
         private const val NO_DAY = Long.MIN_VALUE
-
-        const val QUIET_MINUTES = 15
 
         @Volatile private var instance: Store? = null
 

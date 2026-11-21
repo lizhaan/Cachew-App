@@ -9,8 +9,6 @@ import java.time.temporal.ChronoUnit
 /** Answer to "How are you feeling right now?" (screen 14). */
 enum class Mood { Tired, Bored, Stressed, Fine }
 
-/** What the user chose on screen 15. */
-enum class Decision { Waiting, Heart, Bought }
 
 /**
  * The game rules in one place, as plain functions with no Android dependencies,
@@ -18,8 +16,6 @@ enum class Decision { Waiting, Heart, Bought }
  */
 object Game {
 
-    // Kept until stage 3 replaces "Add to waiting list" (v2: cashews come from Share instead).
-    const val CASHEWS_PER_PAUSE = Rules.CASHEWS_PER_SAVED_ITEM
     const val HEARTS_PER_MONTH = Rules.HEARTS_PER_MONTH
 
     // ---- Streak: "Days in a row without an impulse buy" (mockup 07) -------------------
@@ -93,24 +89,22 @@ object Game {
     fun cashewsForLetGo(price: Double?): Int =
         price?.let { Math.round(it * Rules.CASHEWS_PER_DOLLAR_LET_GO).toInt() } ?: 0
 
-    // ---- Decision headline (screen 15) ---------------------------------------------------
-
-    /** Pieces the headline is built from; the UI turns them into words. */
-    enum class Part { Tired, Bored, Stressed, Late, NotOnList }
+    // ---- Choice screen headline (design-v2/02) --------------------------------------------
 
     /**
-     * Risk signals in a fixed order: mood (unless Fine), "late" at night, "not on your list".
-     * Empty list = "On your list and feeling fine."
-     * Non-empty and on the list = "<parts>, but on your list." Otherwise "<parts>."
+     * Built only from the two quiz answers (not the clock):
+     *  Tired + not on list → "Tired, just scrolling."      Fine + not on list → "Feeling fine, just scrolling."
+     *  Tired + on list     → "Tired, but on your list."    Fine + on list     → "On your list and feeling fine."
      */
-    fun headlineParts(mood: Mood, onList: Boolean, night: Boolean): List<Part> = buildList {
-        when (mood) {
-            Mood.Tired -> add(Part.Tired)
-            Mood.Bored -> add(Part.Bored)
-            Mood.Stressed -> add(Part.Stressed)
-            Mood.Fine -> Unit
-        }
-        if (night) add(Part.Late)
-        if (!onList) add(Part.NotOnList)
+    enum class Headline { MoodScrolling, MoodButOnList, FineScrolling, AllGood }
+
+    fun headline(mood: Mood, onList: Boolean): Headline = when {
+        mood == Mood.Fine && onList -> Headline.AllGood
+        mood == Mood.Fine -> Headline.FineScrolling
+        onList -> Headline.MoodButOnList
+        else -> Headline.MoodScrolling
     }
+
+    /** Anything other than "fine and on the list" is a risky moment ("That's when most regret buys happen"). */
+    fun isRisky(mood: Mood, onList: Boolean): Boolean = headline(mood, onList) != Headline.AllGood
 }

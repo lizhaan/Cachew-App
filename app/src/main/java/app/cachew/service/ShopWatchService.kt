@@ -9,6 +9,7 @@ import android.provider.Settings
 import android.view.accessibility.AccessibilityEvent
 import app.cachew.data.Store
 import app.cachew.pause.PauseActivity
+import app.cachew.session.SessionController
 import app.cachew.share.ShareActivity
 
 /**
@@ -35,19 +36,39 @@ class ShopWatchService : AccessibilityService() {
     private var lastPausePackage: String? = null
     private var lastPauseAt = 0L
 
+    /** The 10-minute shop session and its overlays (timer pill, Penny's circle, check-in sheet). */
+    private val sessions by lazy { SessionController(this) }
+
+    override fun onServiceConnected() {
+        super.onServiceConnected()
+        sessions.resume()
+    }
+
+    override fun onDestroy() {
+        sessions.shutdown()
+        super.onDestroy()
+    }
+
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
         if (event?.eventType != AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) return
         val pkg = event.packageName?.toString() ?: return
-        if (isOverlay(pkg, event.className?.toString())) return
+        val className = event.className?.toString()
+        if (pkg == packageName && className == ShareActivity::class.java.name) {
+            sessions.onShareScreen()
+            return
+        }
+        if (isOverlay(pkg, className)) return
 
         val previous = lastRealPackage
         lastRealPackage = pkg
+        sessions.onForeground(pkg) // shows / hides the session overlays
         if (pkg == previous) return // still in the same app (new screen, dialog, back from share sheet)
 
         val store = Store.get(this)
         if (pkg !in store.selectedPackages.value) return
         val now = System.currentTimeMillis()
-        if (store.isQuiet(pkg, now)) return
+        // Session running for this shop (came back within its 10 minutes): no new pause.
+        if (store.activeSession(pkg, now) != null) return
         if (PauseActivity.showingFor == pkg) return // pause for this shop is already on screen
         if (pkg == lastPausePackage && now - lastPauseAt < DEBOUNCE_MS) return
         lastPausePackage = pkg
@@ -59,7 +80,8 @@ class ShopWatchService : AccessibilityService() {
 
     private fun isOverlay(pkg: String, className: String?): Boolean {
         if (pkg in OVERLAY_PACKAGES) return true
-        if (pkg == packageName && className == ShareActivity::class.java.name) return true
+        // Our own windows that aren't screens (the session overlays) don't change the app in front.
+        if (pkg == packageName && (className == null || !className.endsWith("Activity"))) return true
         if (className != null && ("Chooser" in className || "ResolverActivity" in className)) return true
         // The keyboard currently in use.
         val ime = Settings.Secure.getString(contentResolver, Settings.Secure.DEFAULT_INPUT_METHOD)
