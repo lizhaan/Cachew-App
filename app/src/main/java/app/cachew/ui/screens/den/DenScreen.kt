@@ -1,14 +1,18 @@
 package app.cachew.ui.screens.den
 
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
@@ -17,45 +21,32 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringArrayResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.cachew.R
+import app.cachew.data.Game
 import app.cachew.data.Money
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.layout.size
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.unit.sp
-import java.time.format.DateTimeFormatter
-import app.cachew.data.WaitItem
-import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.TextButton
-import androidx.compose.ui.text.input.KeyboardType
-import app.cachew.data.ShopApps
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.runtime.mutableIntStateOf
-import app.cachew.ui.components.StatCard
-import app.cachew.data.ShopLabels
 import app.cachew.data.Store
-import app.cachew.pause.PauseActivity
-import app.cachew.reminders.Reminders
 import app.cachew.service.ShopWatchService
-import app.cachew.ui.components.CachewBackground
 import app.cachew.ui.components.GlassCard
+import app.cachew.ui.components.HeartsRow
 import app.cachew.ui.components.Penny
 import app.cachew.ui.components.PennyPose
 import app.cachew.ui.components.PrimaryButton
@@ -63,237 +54,242 @@ import app.cachew.ui.components.XiaomiPopupCard
 import app.cachew.ui.theme.CachewColors
 import app.cachew.ui.theme.CachewSize
 import app.cachew.ui.theme.CachewType
+import app.cachew.ui.theme.Inter
+import java.time.LocalDate
+import java.time.LocalTime
+import java.time.YearMonth
+import java.time.format.DateTimeFormatter
+import java.time.format.TextStyle
+import java.util.Locale
 
-/**
- * TEMPORARY den (stages 1–5): saved shops, whether the pause service is on, and a demo pause.
- * Replaced by the real screen 12 in stage 6.
- */
 private val HHMM = DateTimeFormatter.ofPattern("HH:mm")
 
+/**
+ * Den, the home tab (design-v2/01): money saved this month with hearts, the savings goal and
+ * Penny's level; Penny's winter stash (cashews) with her next reward; the night shield.
+ */
 @Composable
-fun DenScreen(
-    onEditShops: () -> Unit,
-    onTurnOn: () -> Unit,
-    onOpenItem: (String) -> Unit,
-    onBoughtWithHeart: (String) -> Unit,
-    onNightShield: () -> Unit,
-) {
+fun DenScreen(onTurnOn: () -> Unit, onNightShield: () -> Unit, onGoal: () -> Unit) {
     val context = LocalContext.current
     val store = remember { Store.get(context) }
-    val selected by store.selectedPackages.collectAsStateWithLifecycle()
 
-    // Re-checked every time the den comes back to the front (e.g. after Settings).
-    var serviceState by remember { mutableStateOf(ShopWatchService.state(context)) }
-    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { serviceState = ShopWatchService.state(context) }
-    val serviceOn = serviceState == ShopWatchService.State.On
-
-    val names by produceState(emptyList<String>(), selected) {
-        value = selected.map { ShopLabels.load(context, it).name }
-    }
-
-    // Counters: recomputed after every game change and when the den comes back (the date may have changed).
+    // Recomputed after every game change and whenever the den comes back (date, service state).
     val gameVersion by store.gameVersion.collectAsStateWithLifecycle()
     var resumes by remember { mutableIntStateOf(0) }
-    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { resumes++ }
+    var serviceState by remember { mutableStateOf(ShopWatchService.state(context)) }
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
+        resumes++
+        serviceState = ShopWatchService.state(context)
+    }
     val game = remember(gameVersion, resumes) { store.snapshot() }
-    var editing by remember { mutableStateOf<WaitItem?>(null) }
-    editing?.let { item ->
-        EditItemDialog(
-            item = item,
-            heartsLeft = game.heartsLeft,
-            heartsRefill = game.heartsRefill.format(DateTimeFormatter.ofPattern("MMM d", java.util.Locale.US)),
-            onDismiss = { editing = null },
-            onSave = {
-                store.updateItem(it)
-                editing = null
-            },
-            onBuy = {
-                editing = null
-                // The wait isn't over: buying now costs a heart (streak kept), then screen 22.
-                if (store.buy(item.id)) {
-                    Reminders.cancel(context, item.id)
-                    onBoughtWithHeart(item.id)
-                }
-            },
-        )
+    val savedThisMonth = remember(gameVersion, resumes) { store.keptIn(YearMonth.now()) }
+    val goal = remember(gameVersion, resumes) { store.goal }
+    val goalProgress = remember(gameVersion, resumes) { store.goalProgress() }
+    val shield = remember(gameVersion, resumes) { store.nightShield }
+    val now = LocalTime.now()
+    val goalReached = goal != null && goalProgress >= goal.amount
+
+    // Penny: asleep at night, back turned after "I already bought it" today, celebrating a reached goal.
+    val pose = when {
+        shield.isNight(now) -> PennyPose.Sleep
+        game.boughtAnywayToday -> PennyPose.Back
+        goalReached -> PennyPose.Love
+        else -> PennyPose.Look
     }
 
-    CachewBackground {
-        Column(
-            Modifier
-                .fillMaxSize()
-                .statusBarsPadding()
-                .navigationBarsPadding()
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = CachewSize.ScreenPadding, vertical = 16.dp),
-        ) {
-            Text(stringResource(R.string.den_greeting), style = CachewType.Body, color = CachewColors.TextSecondary)
-            Text(stringResource(R.string.den_title), style = CachewType.H1, color = CachewColors.Title)
-            Spacer(Modifier.height(16.dp))
-            // After "Buy it anyway" Cachew sits with its back turned until the end of the day.
-            Penny(if (game.boughtAnywayToday) PennyPose.Back else PennyPose.Look, 180.dp, Modifier.align(Alignment.CenterHorizontally))
-            Spacer(Modifier.height(16.dp))
-
-            Row(horizontalArrangement = Arrangement.spacedBy(CachewSize.Gap)) {
-                StatCard(game.streak.toString(), stringResource(R.string.stat_streak), Modifier.weight(1f), R.drawable.ic_flame)
-                StatCard(game.cashews.toString(), stringResource(R.string.den_cashews), Modifier.weight(1f), R.drawable.ic_cashew)
-                StatCard(game.heartsLeft.toString(), stringResource(R.string.stat_hearts_left), Modifier.weight(1f), R.drawable.ic_heart)
+    Column(
+        Modifier
+            .fillMaxSize()
+            .statusBarsPadding()
+            .verticalScroll(rememberScrollState())
+            .padding(horizontal = CachewSize.ScreenPadding, vertical = 16.dp),
+    ) {
+        // Greeting + streak and cashew chips.
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.weight(1f)) {
+                Text(stringResource(greeting(now)), style = CachewType.Body, color = CachewColors.TextSecondary)
+                Text(stringResource(R.string.den_title), style = CachewType.H1.copy(fontSize = 26.sp), color = CachewColors.Title, maxLines = 1)
             }
-            Spacer(Modifier.height(CachewSize.Gap))
+            CounterChip(game.streak.toString(), R.drawable.ic_flame)
+            Spacer(Modifier.width(8.dp))
+            CounterChip(game.cashews.toString(), R.drawable.ic_cashew)
+        }
+        Spacer(Modifier.height(16.dp))
 
-            // Night shield card (as on mockup 12), with the real schedule.
-            val shield = remember(gameVersion, resumes) { store.nightShield }
-            GlassCard(Modifier.fillMaxWidth(), onClick = onNightShield) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Image(painterResource(R.drawable.ic_moon), contentDescription = null, modifier = Modifier.size(26.dp))
-                    Spacer(Modifier.width(14.dp))
-                    Text(stringResource(R.string.shield_title), style = CachewType.Body.copy(fontWeight = FontWeight.Bold, fontSize = 18.sp), color = CachewColors.Title, modifier = Modifier.weight(1f))
-                    Text(
-                        if (shield.on) "${shield.from.format(HHMM)} – ${shield.to.format(HHMM)}" else stringResource(R.string.den_shield_off),
-                        style = CachewType.Body.copy(fontSize = 17.sp),
-                        color = CachewColors.TextSecondary,
-                    )
-                }
-            }
-            Spacer(Modifier.height(CachewSize.Gap))
-
-            GlassCard(Modifier.fillMaxWidth()) {
-                Text(stringResource(R.string.den_waiting_label).uppercase(), style = CachewType.Label, color = CachewColors.PurpleText)
-                Spacer(Modifier.height(8.dp))
-                if (game.waiting.isEmpty()) {
-                    Text(stringResource(R.string.den_waiting_empty), style = CachewType.Body, color = CachewColors.TextSecondary)
-                }
-                // Ready items open "Still want it?"; items still waiting can be renamed / re-priced.
-                game.waiting.forEach { item ->
-                    val price = item.price?.let { " · " + Money.format(it, item.currency) }.orEmpty()
-                    val left = item.dueAt - System.currentTimeMillis()
-                    val ready = left <= 0
-                    val status = when {
-                        ready -> stringResource(R.string.den_item_ready)
-                        left < 3_600_000L -> stringResource(R.string.den_item_minutes_left, (left / 60_000L).toInt() + 1)
-                        else -> stringResource(R.string.den_item_hours_left, (left / 3_600_000L).toInt())
-                    }
-                    Text(
-                        text = "${item.title}$price · $status",
-                        style = CachewType.Body.copy(fontWeight = if (ready) FontWeight.Bold else FontWeight.Normal),
-                        color = if (ready) CachewColors.PurpleText else CachewColors.Text,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(8.dp))
-                            .clickable { if (ready) onOpenItem(item.id) else editing = item }
-                            .padding(vertical = 6.dp),
-                    )
-                }
-            }
-            Spacer(Modifier.height(CachewSize.Gap))
-
+        if (serviceState != ShopWatchService.State.On) {
             ServiceCard(state = serviceState, onTurnOn = onTurnOn)
             Spacer(Modifier.height(CachewSize.Gap))
-            if (serviceOn) {
-                XiaomiPopupCard()
-                Spacer(Modifier.height(CachewSize.Gap))
-            }
+        } else {
+            XiaomiPopupCard(Modifier.padding(bottom = CachewSize.Gap))
+        }
 
-            GlassCard(Modifier.fillMaxWidth()) {
-                Text(stringResource(R.string.den_watching_label).uppercase(), style = CachewType.Label, color = CachewColors.PurpleText)
-                Spacer(Modifier.height(8.dp))
-                Text(names.joinToString(" · "), style = CachewType.Body, color = CachewColors.Text)
+        // MONEY SAVED THIS MONTH
+        val month = LocalDate.now().month.getDisplayName(TextStyle.FULL, Locale.US)
+        val level = Game.levelFor(game.cashews)
+        val next = Game.nextLevel(level)
+        val levelNames = stringArrayResource(R.array.level_names)
+        GlassCard(Modifier.fillMaxWidth()) {
+            Row {
+                Column(Modifier.weight(1f)) {
+                    Text(stringResource(R.string.den_saved_label).uppercase(), style = CachewType.Label, color = CachewColors.PurpleText)
+                    Spacer(Modifier.height(4.dp))
+                    Text(Money.format(savedThisMonth, Money.DEFAULT_CURRENCY), style = CachewType.BigNumber.copy(fontSize = 48.sp), color = CachewColors.Title)
+                    Spacer(Modifier.height(8.dp))
+                    HeartsRow(left = game.heartsLeft, total = Game.HEARTS_PER_MONTH, size = 20.dp, gap = 8.dp)
+                    Spacer(Modifier.height(6.dp))
+                    Text(
+                        pluralStringResource(R.plurals.hearts_left_in_month, game.heartsLeft, game.heartsLeft, month),
+                        style = CachewType.Body.copy(fontSize = 14.sp),
+                        color = CachewColors.TextSecondary,
+                    )
+                    if (goal != null) {
+                        Spacer(Modifier.height(6.dp))
+                        Text(
+                            stringResource(
+                                R.string.den_goal_line, goal.name,
+                                Money.format(goalProgress.coerceAtMost(goal.amount), Money.DEFAULT_CURRENCY),
+                                Money.format(goal.amount, Money.DEFAULT_CURRENCY),
+                            ),
+                            style = CachewType.Body.copy(fontSize = 14.sp, fontWeight = FontWeight.Bold),
+                            color = CachewColors.Gold,
+                        )
+                    }
+                }
+                Penny(pose, 104.dp, Modifier.align(Alignment.CenterVertically))
             }
-            Spacer(Modifier.height(24.dp))
+            Spacer(Modifier.height(12.dp))
+            Row {
+                Text(stringResource(R.string.den_level, level.number), style = CachewType.Body.copy(fontSize = 14.sp, fontWeight = FontWeight.SemiBold), color = CachewColors.Text, modifier = Modifier.weight(1f))
+                Text(levelNames[level.number - 1], style = CachewType.Body.copy(fontSize = 14.sp, fontWeight = FontWeight.SemiBold), color = CachewColors.PurpleText)
+            }
+            Spacer(Modifier.height(6.dp))
+            ProgressBar(levelFraction(game.cashews, level, next), CachewColors.Purple)
+        }
+        Spacer(Modifier.height(CachewSize.Gap))
 
-            PrimaryButton(
-                text = stringResource(R.string.den_try_pause),
-                onClick = {
-                    // Demo uses the first picked shop (or Amazon), so the pill looks real.
-                    val pkg = selected.firstOrNull() ?: ShopApps.recommended.first().packageName
-                    context.startActivity(PauseActivity.intent(context, pkg, System.currentTimeMillis(), demo = true))
-                },
-            )
-            Text(
-                text = stringResource(R.string.den_edit_shops),
-                style = CachewType.Button,
-                color = CachewColors.TextSecondary,
-                textAlign = TextAlign.Center,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(CachewSize.ButtonRadius))
-                    .clickable(onClick = onEditShops)
-                    .padding(vertical = 16.dp),
-            )
-            Text(stringResource(R.string.den_placeholder_note), style = CachewType.Body, color = CachewColors.TextSecondary.copy(alpha = 0.5f))
+        // Goal: none yet → ask; reached → celebrate and offer a new one.
+        if (goal == null) {
+            GlassCard(Modifier.fillMaxWidth(), selected = true, onClick = onGoal) {
+                Text(stringResource(R.string.den_goal_ask), style = CardTitle, color = CachewColors.Title)
+                Spacer(Modifier.height(4.dp))
+                Text(stringResource(R.string.den_goal_ask_body), style = CachewType.Body, color = CachewColors.TextSecondary)
+            }
+            Spacer(Modifier.height(CachewSize.Gap))
+        } else if (goalReached) {
+            GlassCard(Modifier.fillMaxWidth(), selected = true) {
+                Text(stringResource(R.string.den_goal_done, goal.name), style = CardTitle, color = CachewColors.Title)
+                Spacer(Modifier.height(4.dp))
+                Text(stringResource(R.string.den_goal_done_body), style = CachewType.Body, color = CachewColors.TextSecondary)
+                Spacer(Modifier.height(12.dp))
+                PrimaryButton(stringResource(R.string.den_goal_new), onClick = {
+                    store.completeGoal()
+                    onGoal()
+                })
+            }
+            Spacer(Modifier.height(CachewSize.Gap))
+        }
+
+        // Penny's winter stash: cashews and her next reward.
+        val rewards = stringArrayResource(R.array.level_rewards)
+        val rewardIcons = stringArrayResource(R.array.level_reward_icons)
+        GlassCard(Modifier.fillMaxWidth()) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(stringResource(R.string.den_stash_title), style = CardTitle, color = CachewColors.Title, modifier = Modifier.weight(1f))
+                Image(painterResource(R.drawable.ic_cashew), contentDescription = null, modifier = Modifier.size(22.dp))
+                Spacer(Modifier.width(6.dp))
+                Text(game.cashews.toString(), style = CardTitle, color = CachewColors.Title)
+            }
+            Spacer(Modifier.height(12.dp))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(rewardIcons[(next ?: level).number - 1], fontSize = 30.sp)
+                Spacer(Modifier.width(14.dp))
+                Column(Modifier.weight(1f)) {
+                    Text(
+                        if (next != null) stringResource(R.string.den_next_reward, rewards[next.number - 1])
+                        else stringResource(R.string.den_max_level),
+                        style = CachewType.Body.copy(fontWeight = FontWeight.Bold),
+                        color = CachewColors.Title,
+                    )
+                    Spacer(Modifier.height(6.dp))
+                    ProgressBar(levelFraction(game.cashews, level, next), CachewColors.Gold)
+                    if (next != null) {
+                        Spacer(Modifier.height(6.dp))
+                        Text(
+                            stringResource(R.string.den_next_at, next.from, next.number),
+                            style = CachewType.Body.copy(fontSize = 13.sp),
+                            color = CachewColors.TextSecondary,
+                        )
+                    }
+                }
+            }
+        }
+        Spacer(Modifier.height(CachewSize.Gap))
+
+        // Night shield with the real schedule.
+        GlassCard(Modifier.fillMaxWidth(), onClick = onNightShield) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Image(painterResource(R.drawable.ic_moon), contentDescription = null, modifier = Modifier.size(24.dp))
+                Spacer(Modifier.width(14.dp))
+                Text(stringResource(R.string.shield_title), style = CardTitle, color = CachewColors.Title, modifier = Modifier.weight(1f))
+                Text(
+                    if (shield.on) "${shield.from.format(HHMM)} – ${shield.to.format(HHMM)}" else stringResource(R.string.den_shield_off),
+                    style = CachewType.Body.copy(fontSize = 16.sp),
+                    color = CachewColors.TextSecondary,
+                )
+            }
         }
     }
 }
 
-/** Rename / re-price a waiting item, or "Buy it" early with a heart. (Temporary den; stage 6 has the real list.) */
+private val CardTitle = CachewType.Body.copy(fontWeight = FontWeight.Bold, fontSize = 18.sp)
+
+private fun greeting(now: LocalTime): Int = when (now.hour) {
+    in 5..11 -> R.string.den_greeting_morning
+    in 12..17 -> R.string.den_greeting_afternoon
+    else -> R.string.den_greeting_evening
+}
+
+/** How far the stash is from this level's start to the next level (full at the top level). */
+private fun levelFraction(cashews: Int, level: Game.Level, next: Game.Level?): Float =
+    if (next == null) 1f else ((cashews - level.from).toFloat() / (next.from - level.from)).coerceIn(0f, 1f)
+
+/** "🔥 1" / "🥜 20" chip in the top right corner. */
 @Composable
-private fun EditItemDialog(
-    item: WaitItem,
-    heartsLeft: Int,
-    heartsRefill: String,
-    onDismiss: () -> Unit,
-    onSave: (WaitItem) -> Unit,
-    onBuy: () -> Unit,
-) {
-    var name by remember { mutableStateOf(item.title) }
-    var price by remember { mutableStateOf(item.price?.let { if (it % 1.0 == 0.0) it.toLong().toString() else it.toString() }.orEmpty()) }
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        containerColor = CachewColors.BgMid,
-        titleContentColor = CachewColors.Title,
-        title = { Text(stringResource(R.string.edit_item_title)) },
-        text = {
-            Column {
-                OutlinedTextField(name, { name = it }, label = { Text(stringResource(R.string.edit_item_name)) }, singleLine = true)
-                Spacer(Modifier.height(8.dp))
-                OutlinedTextField(
-                    price, { price = it },
-                    label = { Text(stringResource(R.string.edit_item_price) + " (" + Money.symbol(item.currency) + ")") },
-                    singleLine = true,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                )
-                Spacer(Modifier.height(16.dp))
-                // "Buy it" before the wait is over: costs one of this month's hearts.
-                TextButton(onClick = onBuy, enabled = heartsLeft > 0) {
-                    Text(
-                        if (heartsLeft > 0) stringResource(R.string.buy_with_heart, heartsLeft)
-                        else stringResource(R.string.buy_no_hearts, heartsRefill)
-                    )
-                }
-            }
-        },
-        confirmButton = {
-            TextButton(onClick = {
-                onSave(item.copy(title = name.trim().ifEmpty { item.title }, price = Money.parse(price)))
-            }) { Text(stringResource(R.string.save)) }
-        },
-        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) } },
-    )
+private fun CounterChip(value: String, icon: Int) {
+    GlassCard(radius = 14.dp, contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 10.dp, vertical = 6.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Image(painterResource(icon), contentDescription = null, modifier = Modifier.size(18.dp))
+            Spacer(Modifier.width(5.dp))
+            Text(value, fontFamily = Inter, fontWeight = FontWeight.ExtraBold, fontSize = 15.sp, color = CachewColors.Title)
+        }
+    }
 }
 
 @Composable
+private fun ProgressBar(fraction: Float, color: Color) {
+    val shape = RoundedCornerShape(50)
+    Box(Modifier.fillMaxWidth().height(8.dp).clip(shape).background(Color.White.copy(alpha = 0.1f))) {
+        Box(Modifier.fillMaxWidth(fraction).fillMaxHeight().clip(shape).background(color))
+    }
+}
+
+/** Shown only when pauses can't work: the accessibility switch is off or Android stopped the service. */
+@Composable
 private fun ServiceCard(state: ShopWatchService.State, onTurnOn: () -> Unit) {
-    val serviceOn = state == ShopWatchService.State.On
-    GlassCard(Modifier.fillMaxWidth(), selected = !serviceOn, onClick = if (serviceOn) null else onTurnOn) {
+    GlassCard(Modifier.fillMaxWidth(), selected = true, onClick = onTurnOn) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
-                text = when (state) {
-                    ShopWatchService.State.On -> "✓  " + stringResource(R.string.den_service_on)
-                    ShopWatchService.State.Stuck -> stringResource(R.string.den_service_stuck)
-                    ShopWatchService.State.Off -> stringResource(R.string.den_service_off)
-                },
+                stringResource(if (state == ShopWatchService.State.Stuck) R.string.den_service_stuck else R.string.den_service_off),
                 style = CachewType.Body.copy(fontWeight = FontWeight.SemiBold),
-                color = if (serviceOn) CachewColors.PurpleText else CachewColors.Text,
+                color = CachewColors.Text,
                 modifier = Modifier.weight(1f),
             )
-            if (!serviceOn) {
-                Spacer(Modifier.width(12.dp))
-                Text(
-                    stringResource(if (state == ShopWatchService.State.Stuck) R.string.den_fix else R.string.den_turn_on),
-                    style = CachewType.Button,
-                    color = CachewColors.PurpleText,
-                )
-            }
+            Spacer(Modifier.width(12.dp))
+            Text(
+                stringResource(if (state == ShopWatchService.State.Stuck) R.string.den_fix else R.string.den_turn_on),
+                style = CachewType.Button,
+                color = CachewColors.PurpleText,
+            )
         }
     }
 }

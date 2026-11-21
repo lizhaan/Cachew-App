@@ -219,21 +219,97 @@
     <string name="stat_streak_kept">streak kept</string>
     <string name="stat_hearts_refill">hearts refill</string>
 
-    <!-- Temporary den (real home screen comes in stage 6) -->
-    <string name="den_greeting">Good evening</string>
+    <!-- Tabs -->
+    <string name="tab_den">Den</string>
+    <string name="tab_waiting">Waiting list</string>
+    <string name="tab_stats">Stats</string>
+    <string name="tab_me">Me</string>
+
+    <!-- Den (design-v2/01) -->
+    <string name="den_greeting_morning">Good morning</string>
+    <string name="den_greeting_afternoon">Good afternoon</string>
+    <string name="den_greeting_evening">Good evening</string>
+    <string name="den_saved_label">Money saved this month</string>
+    <string name="den_goal_line">✈ %1$s goal · %2$s of %3$s</string>
+    <string name="den_level">Level %1$d</string>
+    <string name="den_goal_ask">What are you saving for?</string>
+    <string name="den_goal_ask_body">Pick a goal. Every “Let it go” moves you closer.</string>
+    <string name="den_goal_done">%1$s goal reached! 🎉</string>
+    <string name="den_goal_done_body">Penny is so proud of you. Ready for the next one?</string>
+    <string name="den_goal_new">Set a new goal</string>
+    <string name="den_stash_title">Penny\'s winter stash</string>
+    <string name="den_next_reward">Next for Penny: %1$s</string>
+    <string name="den_max_level">Penny is winter-ready</string>
+    <string name="den_next_at">at %1$d cashews · Level %2$d</string>
+
+    <!-- Waiting list tab (design-v2/08) -->
+    <string name="waiting_title">Waiting list</string>
+    <string name="waiting_subtitle">Things you shared instead of buying.</string>
+    <string name="waiting_total_waiting">waiting</string>
+    <string name="waiting_total_saved">saved</string>
+    <string name="waiting_total_bought">bought</string>
+    <string name="waiting_empty">Nothing waiting yet</string>
+    <string name="waiting_empty_hint">In a shop, tap Share → Cachew. Penny keeps it here while you wait.</string>
+    <string name="waiting_section_waiting">Waiting</string>
+    <string name="waiting_section_decided">Decided</string>
+    <string name="waiting_added">%1$s · added %2$s</string>
+    <string name="waiting_let_go">%1$s · let go %2$s</string>
+    <string name="waiting_kept">+%1$s kept</string>
+    <string name="waiting_bought_heart">%1$s · bought with a heart</string>
+    <string name="waiting_heart_used">heart used</string>
+    <string name="waiting_bought">%1$s · bought</string>
+    <string name="waiting_bought_status">bought</string>
+
+    <!-- Stats tab (design-v2/09) -->
+    <string name="stats_title">Stats</string>
+    <string name="stats_subtitle">%1$s so far</string>
+    <string name="stats_stash_label">Winter stash</string>
+    <string name="stats_stash_caption">kept instead of spent</string>
+    <string name="stats_pauses">pauses</string>
+    <string name="stats_let_go_value">%1$d of %2$d</string>
+    <string name="stats_let_go">wants you let go</string>
+    <string name="stats_riskiest_hour">riskiest hour</string>
+    <string name="stats_top_shop">top trigger shop</string>
+    <string name="stats_dash">–</string>
+
+    <!-- Me tab (25) -->
+    <string name="me_name">Penny</string>
+    <string name="me_level">Level %1$d · %2$s · %3$d cashews</string>
+    <string name="me_shops">Shops with a pause</string>
+    <plurals name="me_apps">
+        <item quantity="one">%d app</item>
+        <item quantity="other">%d apps</item>
+    </plurals>
+    <string name="me_waiting_time">Waiting time</string>
+    <string name="me_hours">%1$d hours</string>
+    <string name="me_goal">Savings goal</string>
+    <string name="me_goal_value">%1$s · %2$s of %3$s</string>
+    <string name="me_goal_none">Not set</string>
+    <string name="me_pauses">Pauses</string>
+    <string name="me_on">On</string>
+    <string name="me_off">Off</string>
+    <string name="me_reset">Reset demo data</string>
+    <string name="me_reset_title">Reset demo data?</string>
+    <string name="me_reset_body">Waiting items, cashews, streak, hearts, stats and goals start from zero. Your shops and night shield stay.</string>
+    <string name="me_reset_confirm">Reset</string>
+
+    <!-- Savings goal -->
+    <string name="goal_title">What are you saving for?</string>
+    <string name="goal_body">Every “Let it go” adds the item\'s price to your goal.</string>
+    <string name="goal_name">Goal</string>
+    <string name="goal_name_hint">e.g. Tokyo</string>
+    <string name="goal_amount">Amount</string>
+    <string name="goal_set">Set goal</string>
+    <string name="goal_skip">Skip</string>
+    <string name="goal_reached">Reached</string>
+
+    <!-- Den: service state, demo pause, waiting times -->
     <string name="den_title">Penny\'s den</string>
-    <string name="den_watching_label">Pause before</string>
-    <string name="den_edit_shops">Edit shops</string>
     <string name="den_try_pause">Try a pause (demo)</string>
-    <string name="den_service_on">Pauses are on</string>
     <string name="den_service_off">Pauses are off: Cachew can\'t notice shops yet.</string>
     <string name="den_turn_on">Turn on</string>
     <string name="den_service_stuck">Pauses stopped after an update: turn Cachew off and on in Accessibility.</string>
     <string name="den_fix">Fix</string>
-    <string name="den_placeholder_note">The full den arrives in a later stage.</string>
-    <string name="den_cashews">cashews</string>
-    <string name="den_waiting_label">Waiting</string>
-    <string name="den_waiting_empty">Nothing waiting yet.</string>
 
     <!-- Levels, by cashews in the stash (thresholds in data/Rules.kt). Index = level − 1. -->
     <string-array name="level_names">
@@ -242,6 +318,14 @@
         <item>Keeper</item>
         <item>Stasher</item>
         <item>Winter-ready</item>
+    </string-array>
+    <!-- Picture of each reward on the den's winter stash card. Index = level − 1. -->
+    <string-array name="level_reward_icons">
+        <item>🌰</item>
+        <item>🧣</item>
+        <item>🧢</item>
+        <item>🔦</item>
+        <item>🏠</item>
     </string-array>
     <!-- What Penny gets on reaching each level ("she got a winter scarf"). Level 1 has none. -->
     <string-array name="level_rewards">

@@ -13,7 +13,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -38,7 +42,21 @@ fun GlassCard(
     val shape = RoundedCornerShape(radius)
     var m = modifier
     if (selected) {
-        m = m.shadow(14.dp, shape, ambientColor = CachewColors.Purple, spotColor = CachewColors.Purple)
+        // Soft purple glow drawn as fading outlines around the card. (A platform shadow shows
+        // through the see-through glass as a dark rectangle, so it isn't used here.)
+        m = m.drawBehind {
+            val r = radius.toPx()
+            for (i in 1..GLOW_STEPS) {
+                val grow = i * 2.dp.toPx()
+                drawRoundRect(
+                    color = CachewColors.Purple.copy(alpha = 0.16f * (GLOW_STEPS + 1 - i) / GLOW_STEPS),
+                    topLeft = Offset(-grow, -grow),
+                    size = Size(size.width + grow * 2, size.height + grow * 2),
+                    cornerRadius = CornerRadius(r + grow),
+                    style = Stroke(width = 2.dp.toPx()),
+                )
+            }
+        }
     }
     m = m.clip(shape)
     m = if (selected) {
@@ -59,6 +77,8 @@ fun GlassCard(
         content = content,
     )
 }
+
+private const val GLOW_STEPS = 6
 
 // Selected cards in the mockups are a cool purple-navy glass, lighter at the top.
 private val SelectedFill = Brush.verticalGradient(

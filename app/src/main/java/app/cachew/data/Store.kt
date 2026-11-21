@@ -337,6 +337,50 @@ class Store private constructor(private val prefs: SharedPreferences) {
         item(id)?.let { updateItem(it.copy(remindedAt = now)) }
     }
 
+    // --- Savings goal ---------------------------------------------------------------
+
+    /** The goal being saved for, or null (then the den asks "What are you saving for?"). */
+    val goal: SavingsGoal?
+        get() = prefs.getString(KEY_GOAL, null)?.let { runCatching { Json.decodeFromString<SavingsGoal>(it) }.getOrNull() }
+
+    /** Reached goals, newest first (Me → Savings goal). */
+    fun goalsDone(): List<SavingsGoal> = readList<SavingsGoal>(KEY_GOALS_DONE).sortedByDescending { it.doneAt }
+
+    /** New goal, or the current one edited (then its progress so far is kept). */
+    fun setGoal(name: String, amount: Double, now: Long = System.currentTimeMillis()) {
+        val setAt = goal?.setAt ?: now
+        prefs.edit { putString(KEY_GOAL, Json.encodeToString(SavingsGoal(name, amount, setAt = setAt))) }
+        changed()
+    }
+
+    /** Money kept towards the current goal since it was set. */
+    fun goalProgress(): Double = goal?.let { Stats.goalProgress(waitItems(), it) } ?: 0.0
+
+    /** Goal reached and celebrated: it moves to the "done" list, ready for a new one. */
+    fun completeGoal(now: Long = System.currentTimeMillis()) {
+        val g = goal ?: return
+        prefs.edit {
+            putString(KEY_GOALS_DONE, Json.encodeToString(readList<SavingsGoal>(KEY_GOALS_DONE) + g.copy(doneAt = now)))
+            remove(KEY_GOAL)
+        }
+        changed()
+    }
+
+    /**
+     * Me → "Reset demo data": a clean start for a demo. Waiting items, cashews, streak, hearts,
+     * pause log, goals and the running session go; picked shops, onboarding, night shield and
+     * waiting time stay. (The caller cancels reminders and deletes photos.)
+     */
+    fun resetDemoData() {
+        prefs.edit {
+            listOf(
+                KEY_ITEMS, KEY_LOG, KEY_CASHEWS, KEY_FIRST_DAY, KEY_LAST_BUY_ANYWAY, KEY_HEARTS_MONTH, KEY_HEARTS_USED,
+                KEY_SESSION, KEY_CLOSE_DAY, KEY_CLOSE_COUNT, KEY_BONUS_MONTH, KEY_STREAK_BONUS, KEY_GOAL, KEY_GOALS_DONE,
+            ).forEach(::remove)
+        }
+        changed()
+    }
+
     /** We ask for the notification permission once, when the first item is added. */
     var notificationsAsked: Boolean
         get() = prefs.getBoolean(KEY_NOTIF_ASKED, false)
@@ -384,6 +428,8 @@ class Store private constructor(private val prefs: SharedPreferences) {
         private const val KEY_SELECTED = "selected_packages"
         private const val KEY_ONBOARDING_DONE = "onboarding_done"
         private const val KEY_SESSION = "session"
+        private const val KEY_GOAL = "goal"
+        private const val KEY_GOALS_DONE = "goals_done"
         private const val KEY_BONUS_MONTH = "bonus_paid_month"
         private const val KEY_STREAK_BONUS = "streak_bonus_paid"
         private const val KEY_CLOSE_DAY = "close_reward_day"

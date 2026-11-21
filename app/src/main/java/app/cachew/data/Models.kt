@@ -89,6 +89,16 @@ data class WaitItem(
     val dueAt: Long get() = addedAt + waitMillis
 }
 
+/** "Tokyo $900": what the user is saving for. Every "Let it go" adds the item's price. */
+@Serializable
+data class SavingsGoal(
+    val name: String,
+    val amount: Double,
+    val setAt: Long,
+    /** When it was reached (goals in Me → Savings goal). */
+    val doneAt: Long? = null,
+)
+
 /** Counters the UI shows, computed for "now" (streak and hearts depend on the date). */
 data class GameSnapshot(
     /** Penny's winter stash; decides her level. */
