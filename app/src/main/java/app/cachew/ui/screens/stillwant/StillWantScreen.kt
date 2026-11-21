@@ -33,7 +33,10 @@ import app.cachew.data.ShopLabels
 import app.cachew.data.Store
 import app.cachew.data.WaitItem
 import app.cachew.data.WinInfo
+import app.cachew.pause.BoughtScreen
 import app.cachew.pause.HeartUsedScreen
+import app.cachew.pause.startBuyPause
+import app.cachew.ui.components.SecondaryButton
 import app.cachew.reminders.Reminders
 import app.cachew.ui.components.CachewBackground
 import app.cachew.ui.components.ChoiceLabel
@@ -55,10 +58,14 @@ import java.util.Locale
 private sealed interface StillStep {
     data object Ask : StillStep
     data class Win(val info: WinInfo) : StillStep
-    data object HeartUsed : StillStep
+    data object AlreadyBought : StillStep
 }
 
-/** Screen 19 "Still want it?" and what follows: 20 (let it go) or 22 (bought with a heart). */
+/**
+ * Screen 19 "Still want it?" (after the wait) and what follows:
+ *  Let it go → "Kept, not spent"; Buy it → short pause → the item's link;
+ *  I already bought it → screen 21 (streak back to 0).
+ */
 @Composable
 fun StillWantFlow(itemId: String, onDone: () -> Unit) {
     val context = LocalContext.current
@@ -79,38 +86,58 @@ fun StillWantFlow(itemId: String, onDone: () -> Unit) {
             AskScreen(
                 item = item,
                 shop = shop,
-                heartsLeft = remember { store.heartsLeft() },
                 keptThisMonth = remember { store.keptIn(YearMonth.now()) },
                 onLetGo = {
                     Reminders.cancel(context, item.id)
                     store.letGo(item.id)?.let { step = StillStep.Win(it) }
                 },
-                onHeart = {
+                onBuy = {
                     Reminders.cancel(context, item.id)
-                    store.buyWithHeart(item.id)
-                    step = StillStep.HeartUsed
-                },
-                onWaitDay = {
-                    store.waitAnotherDay(item.id)?.let { Reminders.schedule(context, it) }
-                    Toast.makeText(context, R.string.still_waiting_more, Toast.LENGTH_SHORT).show()
+                    // Asked after the wait, so it's free; tapped from the list earlier, it costs a heart.
+                    if (store.buy(item.id)) startBuyPause(context, item)
                     onDone()
+                },
+                onAlreadyBought = {
+                    Reminders.cancel(context, item.id)
+                    store.alreadyBought(item.id)
+                    step = StillStep.AlreadyBought
                 },
             )
         }
         is StillStep.Win -> CachewBackground {
             WinScreen(s.info, onDone = onDone)
         }
-        StillStep.HeartUsed -> CachewBackground {
-            HeartUsedScreen(
-                game = remember { store.snapshot() },
-                shopName = shop.name,
-                onBackToDen = onDone,
-                onContinueToShop = {
-                    openShop(context, item.shopPackage)
-                    onDone()
-                },
-            )
+        StillStep.AlreadyBought -> CachewBackground {
+            BoughtScreen(game = remember { store.snapshot() }, onDone = onDone)
         }
+    }
+}
+
+/**
+ * "Buy it" on an item whose wait isn't over: costs a heart → screen 22 "−1 heart" →
+ * "Continue to <shop>" → short pause → the item's link. The heart is spent by the caller.
+ */
+@Composable
+fun BoughtWithHeartFlow(itemId: String, onDone: () -> Unit) {
+    val context = LocalContext.current
+    val store = remember { Store.get(context) }
+    val item = remember(itemId) { store.item(itemId) } ?: run {
+        LaunchedEffect(Unit) { onDone() }
+        return
+    }
+    val shop by produceState(shopLabelOf(item), item.shopPackage) {
+        if (item.shopPackage.isNotEmpty()) value = ShopLabels.load(context, item.shopPackage)
+    }
+    CachewBackground {
+        HeartUsedScreen(
+            game = remember { store.snapshot() },
+            shopName = shop.name,
+            onBackToDen = onDone,
+            onContinueToShop = {
+                startBuyPause(context, item)
+                onDone()
+            },
+        )
     }
 }
 
@@ -119,25 +146,14 @@ private fun shopLabelOf(item: WaitItem): ShopLabel {
     return ShopLabel(name, TileIcon.Letter(name.take(1).uppercase(), CachewColors.Purple))
 }
 
-/**
- * After "Buy it with a heart": off to the shop.
- * TODO(stage 4): one "Buy it" button → short 10 s pause → the item's link, with a 5-minute buy session.
- */
-private fun openShop(context: Context, pkg: String) {
-    if (pkg.isEmpty()) return
-    val launch = context.packageManager.getLaunchIntentForPackage(pkg) ?: return
-    context.startActivity(launch)
-}
-
 @Composable
 private fun AskScreen(
     item: WaitItem,
     shop: ShopLabel,
-    heartsLeft: Int,
     keptThisMonth: Double,
     onLetGo: () -> Unit,
-    onHeart: () -> Unit,
-    onWaitDay: () -> Unit,
+    onBuy: () -> Unit,
+    onAlreadyBought: () -> Unit,
 ) {
     val zone = ZoneId.systemDefault()
     val added = Instant.ofEpochMilli(item.addedAt).atZone(zone)
@@ -181,17 +197,7 @@ private fun AskScreen(
             onClick = onLetGo,
         )
         Spacer(Modifier.height(CachewSize.Gap))
-        // Dark glass button, as in the mockup; faded and inactive with no hearts left.
-        val hasHearts = heartsLeft > 0
-        ChoiceTile(
-            selected = false,
-            onClick = { if (hasHearts) onHeart() },
-            height = CachewSize.ButtonHeight,
-            radius = CachewSize.ButtonRadius,
-            modifier = Modifier.alpha(if (hasHearts) 1f else 0.45f),
-        ) {
-            ChoiceLabel(stringResource(R.string.still_buy_heart))
-        }
-        TextAction(stringResource(R.string.still_wait_day), onWaitDay)
+        SecondaryButton(stringResource(R.string.still_buy_waited), onBuy)
+        TextAction(stringResource(R.string.still_already_bought), onAlreadyBought)
     }
 }

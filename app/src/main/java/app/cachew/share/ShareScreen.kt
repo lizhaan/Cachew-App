@@ -1,6 +1,11 @@
 package app.cachew.share
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import app.cachew.data.RewardInfo
+import app.cachew.ui.components.ChoiceLabel
+import app.cachew.ui.components.ChoiceTile
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -60,7 +65,7 @@ fun ShareScreen(
     fromPackage: String?,
     webShop: ShopLabel?,
     thumbFile: File,
-    onSaved: (WaitItem) -> Unit,
+    onSaved: (RewardInfo) -> Unit,
 ) {
     val context = LocalContext.current
     val store = remember { Store.get(context) }
@@ -79,6 +84,9 @@ fun ShareScreen(
     var loading by rememberSaveable { mutableStateOf(url != null) }
     var thumbPath by rememberSaveable { mutableStateOf<String?>(thumbFile.takeIf { it.exists() }?.path) }
     var hours by rememberSaveable { mutableIntStateOf(store.defaultWaitHours) }
+    /** True once we've tried the page: then, if there's still no price, the quick chips appear. */
+    var priceSearchDone by rememberSaveable { mutableStateOf(false) }
+    var pickedChip by rememberSaveable { mutableIntStateOf(-1) }
 
     // Read the product page once. Failure is silent: whatever we had stays on screen.
     LaunchedEffect(url) {
@@ -103,6 +111,7 @@ fun ShareScreen(
             if (!priceEdited && price != null) priceText = plain(price)
         }
         loading = false
+        priceSearchDone = true
         val image = info?.imageUrl
         if (image != null && ProductFetcher.downloadImage(image, thumbFile)) thumbPath = thumbFile.path
     }
@@ -134,12 +143,32 @@ fun ShareScreen(
                 onName = { name = it; nameEdited = true },
                 nameHint = stringResource(R.string.item_name_hint),
                 priceText = priceText,
-                onPrice = { priceText = it; priceEdited = true },
+                onPrice = { priceText = it; priceEdited = true; pickedChip = -1 },
                 priceHint = stringResource(R.string.item_price_hint),
                 currency = store.currency,
                 loading = loading,
             )
 
+            // No price found: quick ranges instead of typing (the middle of the range is saved).
+            val showChips = (priceSearchDone || url == null) && (priceText.isBlank() || pickedChip >= 0)
+            if (showChips) {
+                Spacer(Modifier.height(CachewSize.Gap))
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    PRICE_CHIPS.forEachIndexed { i, (label, value) ->
+                        ChoiceTile(
+                            selected = pickedChip == i,
+                            onClick = {
+                                pickedChip = i
+                                priceText = plain(value)
+                                priceEdited = true
+                            },
+                            height = 44.dp,
+                            radius = 14.dp,
+                            modifier = Modifier.weight(1f),
+                        ) { ChoiceLabel(label) }
+                    }
+                }
+            }
             Spacer(Modifier.height(20.dp))
             WaitForPicker(hours = hours, onHours = { hours = it })
             Spacer(Modifier.height(CachewSize.Gap))
@@ -165,14 +194,17 @@ fun ShareScreen(
                     thumbPath = thumbPath,
                     url = url,
                 )
-                store.addSharedItem(item) // no nuts: those are for pauses
+                val reward = store.addSharedItem(item) // +15 cashews
                 Reminders.schedule(context, item)
-                askNotifications { onSaved(item) }
+                askNotifications { onSaved(reward) }
             },
         )
         Spacer(Modifier.height(16.dp))
     }
 }
+
+/** Quick price ranges when the page gave no price: label → saved value (middle; "$100+" → 100). */
+private val PRICE_CHIPS = listOf("<$20" to 10.0, "$20–50" to 35.0, "$50–100" to 75.0, "$100+" to 100.0)
 
 /** 64.0 → "64", 64.5 → "64.5" (what goes into the editable price field). */
 private fun plain(price: Double): String =

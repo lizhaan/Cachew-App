@@ -20,6 +20,7 @@ import app.cachew.data.EntryAction
 import app.cachew.data.PauseRecord
 import app.cachew.data.SessionMode
 import app.cachew.data.Store
+import app.cachew.data.WaitItem
 import app.cachew.ui.theme.CachewTheme
 
 /**
@@ -37,6 +38,11 @@ class PauseActivity : ComponentActivity() {
     private var shopPackage by mutableStateOf("")
     private var openedAt by mutableLongStateOf(0L)
     private var demo by mutableStateOf(false)
+    /** "Buy it" from the waiting list: only the 10 s countdown, then the item's link. */
+    private var buyUrl by mutableStateOf<String?>(null)
+    private var buying by mutableStateOf(false)
+    /** Shop name for items shared from a website (no app package). */
+    private var shopNameHint by mutableStateOf<String?>(null)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -48,7 +54,7 @@ class PauseActivity : ComponentActivity() {
         // Back must not drop the user into the shop: send them to the phone's home screen.
         // It still counts as a pause in the log (for Stats), with no answers.
         onBackPressedDispatcher.addCallback(this) {
-            if (!demo) Store.get(this@PauseActivity).logPause(PauseRecord(openedAt, shopPackage, null, null, EntryAction.Left))
+            if (!demo && !buying) Store.get(this@PauseActivity).logPause(PauseRecord(openedAt, shopPackage, null, null, EntryAction.Left))
             goHome()
         }
 
@@ -59,8 +65,11 @@ class PauseActivity : ComponentActivity() {
                     PauseFlow(
                         shopPackage = shopPackage,
                         openedAt = openedAt,
+                        buying = buying,
+                        shopNameHint = shopNameHint,
                         onStartSession = ::startSession,
                         onClose = ::closeShop,
+                        onBuy = ::continueToBuy,
                     )
                 }
             }
@@ -86,6 +95,9 @@ class PauseActivity : ComponentActivity() {
         shopPackage = intent.getStringExtra(EXTRA_PACKAGE).orEmpty()
         openedAt = intent.getLongExtra(EXTRA_OPENED_AT, System.currentTimeMillis())
         demo = intent.getBooleanExtra(EXTRA_DEMO, false)
+        buying = intent.getBooleanExtra(EXTRA_BUY, false)
+        buyUrl = intent.getStringExtra(EXTRA_URL)
+        shopNameHint = intent.getStringExtra(EXTRA_SHOP_NAME)
         showingFor = shopPackage
     }
 
@@ -114,6 +126,21 @@ class PauseActivity : ComponentActivity() {
         launch?.let(::startActivity)
     }
 
+    /**
+     * After the short "Buy it" pause: open the item's own link (in the shop's app when it can show
+     * it, otherwise in the browser) and give that app a 5-minute buying session.
+     */
+    private fun continueToBuy() {
+        val target = BuyTarget.resolve(this, shopPackage, buyUrl)
+        if (target == null) {
+            finish()
+            return
+        }
+        Store.get(this).startBuySession(target.packageName)
+        finish()
+        startActivity(target.intent)
+    }
+
     /** "Close <shop>": +5 cashews (if today's limit allows), then the phone's home screen. */
     private fun closeShop(record: PauseRecord) {
         val store = Store.get(this)
@@ -127,6 +154,9 @@ class PauseActivity : ComponentActivity() {
         private const val EXTRA_PACKAGE = "package"
         private const val EXTRA_OPENED_AT = "opened_at"
         private const val EXTRA_DEMO = "demo"
+        private const val EXTRA_BUY = "buy"
+        private const val EXTRA_URL = "url"
+        private const val EXTRA_SHOP_NAME = "shop_name"
 
         /** Package whose pause is on screen right now; the service won't start a second one. */
         @Volatile var showingFor: String? = null
@@ -138,5 +168,12 @@ class PauseActivity : ComponentActivity() {
                 .putExtra(EXTRA_OPENED_AT, openedAt)
                 .putExtra(EXTRA_DEMO, demo)
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+
+        /** The short pause before buying [item] ("Buy it" in the waiting list / "Still want it?"). */
+        fun buyIntent(context: Context, item: WaitItem): Intent =
+            intent(context, item.shopPackage, openedAt = System.currentTimeMillis())
+                .putExtra(EXTRA_BUY, true)
+                .putExtra(EXTRA_URL, item.url)
+                .putExtra(EXTRA_SHOP_NAME, item.shopName)
     }
 }

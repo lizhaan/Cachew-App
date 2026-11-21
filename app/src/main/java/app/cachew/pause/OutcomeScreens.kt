@@ -74,7 +74,10 @@ private fun OutcomeLayout(
     }
 }
 
-/** Screen 17 "Nice pause." The only way out is closing the shop (no "continue to shop"). */
+/**
+ * "Nice pause." (design-v2/06) after an item is saved through Share.
+ * Button: "Goodnight, Penny" at night, "Thanks, Penny" in the day.
+ */
 @Composable
 fun RewardScreen(reward: RewardInfo, night: Boolean, onClose: () -> Unit) {
     OutcomeLayout(
@@ -109,15 +112,19 @@ fun RewardScreen(reward: RewardInfo, night: Boolean, onClose: () -> Unit) {
                         color = CachewColors.Title,
                         modifier = Modifier.weight(1f),
                     )
-                    if (reward.questDone) {
-                        Text(stringResource(R.string.reward_quest_done), style = CachewType.Body.copy(fontWeight = FontWeight.Bold, fontSize = 17.sp), color = CachewColors.PurpleText)
-                    }
+                    // "+15 🥜 to the stash"
+                    val tag = CachewType.Body.copy(fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                    Text("+${reward.cashews}", style = tag, color = CachewColors.PurpleText)
+                    Spacer(Modifier.width(4.dp))
+                    Image(painterResource(R.drawable.ic_cashew), contentDescription = null, modifier = Modifier.size(20.dp))
+                    Spacer(Modifier.width(4.dp))
+                    Text(stringResource(R.string.reward_to_stash), style = tag, color = CachewColors.PurpleText)
                 }
             }
         },
         buttons = {
             PrimaryButton(
-                text = stringResource(if (night) R.string.reward_goodnight else R.string.pause_back_to_den),
+                text = stringResource(if (night) R.string.reward_goodnight else R.string.reward_thanks),
                 onClick = onClose,
             )
         },
@@ -141,9 +148,9 @@ private fun CashewsChip(cashews: Int) {
     }
 }
 
-/** Screen 21 "Penny turned away" (bought without a heart). */
+/** Screen 21 "Penny turned away" after "I already bought it": streak back to 0. */
 @Composable
-fun BoughtScreen(game: GameSnapshot, onBackToShop: () -> Unit, onBackToDen: () -> Unit) {
+fun BoughtScreen(game: GameSnapshot, onDone: () -> Unit) {
     OutcomeLayout(
         content = {
             Spacer(Modifier.height(36.dp))
@@ -159,14 +166,12 @@ fun BoughtScreen(game: GameSnapshot, onBackToShop: () -> Unit, onBackToDen: () -
             }
         },
         buttons = {
-            // They decided to buy: the main button takes them back to the shop (quiet window).
-            PrimaryButton(text = stringResource(R.string.bought_ok), onClick = onBackToShop)
-            TextAction(stringResource(R.string.pause_back_to_den), onBackToDen)
+            PrimaryButton(text = stringResource(R.string.bought_ok), onClick = onDone)
         },
     )
 }
 
-/** Screen 22 "−1 heart" (day background, as in the mockup). */
+/** Screen 22 "−1 heart": bought before the wait was over. Main button goes on to the shop (short pause first). */
 @Composable
 fun HeartUsedScreen(game: GameSnapshot, shopName: String, onBackToDen: () -> Unit, onContinueToShop: () -> Unit) {
     OutcomeLayout(
@@ -199,8 +204,8 @@ fun HeartUsedScreen(game: GameSnapshot, shopName: String, onBackToDen: () -> Uni
             }
         },
         buttons = {
-            PrimaryButton(text = stringResource(R.string.pause_back_to_den), onClick = onBackToDen)
-            TextAction(stringResource(R.string.pause_continue_to, shopName), onContinueToShop)
+            PrimaryButton(text = stringResource(R.string.pause_continue_to, shopName), onClick = onContinueToShop)
+            TextAction(stringResource(R.string.pause_back_to_den), onBackToDen)
         },
     )
 }

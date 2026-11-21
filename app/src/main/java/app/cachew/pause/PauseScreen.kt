@@ -83,13 +83,19 @@ private enum class Step { Countdown, Questions, Decision }
 fun PauseFlow(
     shopPackage: String,
     openedAt: Long,
+    /** "Buy it" from the waiting list: just the countdown, then [onBuy] (no questions). */
+    buying: Boolean,
+    shopNameHint: String?,
     onStartSession: (PauseRecord, SessionMode) -> Unit,
     onClose: (PauseRecord) -> Unit,
+    onBuy: () -> Unit,
 ) {
     val context = LocalContext.current
     val store = remember { Store.get(context) }
-    val label by produceState<ShopLabel?>(null, shopPackage) { value = ShopLabels.load(context, shopPackage) }
-    val shopName = label?.name ?: ShopLabels.quickName(shopPackage)
+    val label by produceState<ShopLabel?>(null, shopPackage) {
+        if (shopPackage.isNotEmpty()) value = ShopLabels.load(context, shopPackage)
+    }
+    val shopName = label?.name ?: shopNameHint ?: ShopLabels.quickName(shopPackage)
 
     // Night is decided once, when the shop was opened, by the night shield's schedule.
     // (Stage 5 replaces the night pause with a full block.)
@@ -107,9 +113,18 @@ fun PauseFlow(
 
     // Pause, questions and choice always use the night background, to stand apart from the shop.
     CachewBackground(night = true) {
-        when (step) {
+        if (buying) {
+            PauseCountdown(
+                label = label, shopName = shopName, openedAt = openedAt,
+                body = stringResource(R.string.pause_body_buy),
+                button = stringResource(R.string.pause_continue_to, shopName),
+                onAnswer = onBuy,
+            )
+        } else when (step) {
             Step.Countdown -> PauseCountdown(
-                label = label, shopName = shopName, openedAt = openedAt, night = night,
+                label = label, shopName = shopName, openedAt = openedAt,
+                body = stringResource(if (night) R.string.pause_body_night else R.string.pause_body_day),
+                button = stringResource(R.string.pause_answer),
                 onAnswer = { step = Step.Questions },
             )
             Step.Questions -> QuestionsScreen(
@@ -133,7 +148,14 @@ fun PauseFlow(
 
 
 @Composable
-private fun PauseCountdown(label: ShopLabel?, shopName: String, openedAt: Long, night: Boolean, onAnswer: () -> Unit) {
+private fun PauseCountdown(
+    label: ShopLabel?,
+    shopName: String,
+    openedAt: Long,
+    body: String,
+    button: String,
+    onAnswer: () -> Unit,
+) {
     val context = LocalContext.current
     val time = remember(openedAt) { DateFormat.getTimeFormat(context).format(Date(openedAt)) }
 
@@ -166,13 +188,13 @@ private fun PauseCountdown(label: ShopLabel?, shopName: String, openedAt: Long, 
         Text(stringResource(R.string.pause_title), style = CachewType.H1.copy(fontSize = 32.sp), color = CachewColors.Title)
         Spacer(Modifier.height(12.dp))
         Text(
-            stringResource(if (night) R.string.pause_body_night else R.string.pause_body_day),
+            body,
             style = CachewType.Body,
             color = CachewColors.TextSecondary,
             textAlign = TextAlign.Center,
         )
         Spacer(Modifier.weight(1f))
-        PrimaryButton(text = stringResource(R.string.pause_answer), enabled = done, onClick = onAnswer)
+        PrimaryButton(text = button, enabled = done, onClick = onAnswer)
         Spacer(Modifier.height(16.dp))
     }
 }

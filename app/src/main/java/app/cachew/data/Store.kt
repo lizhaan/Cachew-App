@@ -178,14 +178,62 @@ class Store private constructor(private val prefs: SharedPreferences) {
         get() = prefs.getString(KEY_CURRENCY, null) ?: Money.DEFAULT_CURRENCY
         set(value) = prefs.edit { putString(KEY_CURRENCY, value) }
 
-    fun snapshot(today: LocalDate = LocalDate.now()): GameSnapshot = GameSnapshot(
-        cashews = cashews,
-        streak = Game.streak(today, firstDay, lastBuyAnywayDay),
-        heartsLeft = heartsLeft(today),
-        heartsRefill = Game.heartsRefillDate(today),
-        boughtAnywayToday = lastBuyAnywayDay == today,
-        waiting = waitItems().filter { it.status == WaitItem.Status.Waiting },
-    )
+    fun snapshot(today: LocalDate = LocalDate.now()): GameSnapshot {
+        applyBonuses(today)
+        return GameSnapshot(
+            cashews = cashews,
+            streak = Game.streak(today, firstDay, lastBuyAnywayDay),
+            heartsLeft = heartsLeft(today),
+            heartsRefill = Game.heartsRefillDate(today),
+            boughtAnywayToday = lastBuyAnywayDay == today,
+            waiting = waitItems().filter { it.status == WaitItem.Status.Waiting },
+        )
+    }
+
+    // --- Bonus cashews -----------------------------------------------------------------
+
+    /**
+     * Pays the bonuses that came due since the last check (run whenever counters are shown):
+     *  - on the 1st of a month: +50 for every heart left unused in the month(s) before;
+     *  - streak milestones: +50 at 7 days, +200 at 30 days, once per streak.
+     * Returns the cashews added (0 most of the time).
+     */
+    fun applyBonuses(today: LocalDate = LocalDate.now()): Int {
+        var bonus = 0
+        val thisMonth = YearMonth.from(today)
+        val paidUpTo = prefs.getString(KEY_BONUS_MONTH, null)?.let { runCatching { YearMonth.parse(it) }.getOrNull() }
+        if (paidUpTo != null) {
+            var m: YearMonth = paidUpTo
+            while (m < thisMonth) {
+                bonus += heartsLeftIn(m) * Rules.CASHEWS_PER_UNUSED_HEART
+                m = m.plusMonths(1)
+            }
+        }
+        // A streak is identified by the day it started (first day, or the day after "I already bought it").
+        val streakStart = (lastBuyAnywayDay ?: firstDay).toEpochDay()
+        val streak = Game.streak(today, firstDay, lastBuyAnywayDay)
+        val paid = prefs.getString(KEY_STREAK_BONUS, null)?.split(':')
+            ?.takeIf { it.size == 2 && it[0].toLongOrNull() == streakStart }?.get(1)?.toIntOrNull() ?: 0
+        var paidNow = paid
+        for ((days, cashews) in Rules.STREAK_BONUSES.toSortedMap()) {
+            if (streak >= days && days > paid) {
+                bonus += cashews
+                paidNow = days
+            }
+        }
+        prefs.edit {
+            putString(KEY_BONUS_MONTH, thisMonth.toString())
+            putString(KEY_STREAK_BONUS, "$streakStart:$paidNow")
+            if (bonus > 0) putInt(KEY_CASHEWS, cashews + bonus)
+        }
+        if (bonus > 0) changed()
+        return bonus
+    }
+
+    private fun heartsLeftIn(month: YearMonth): Int {
+        val usedIn = prefs.getString(KEY_HEARTS_MONTH, null)?.let { runCatching { YearMonth.parse(it) }.getOrNull() }
+        return Game.heartsLeft(month, usedIn, prefs.getInt(KEY_HEARTS_USED, 0))
+    }
 
     fun waitItems(): List<WaitItem> = readList(KEY_ITEMS)
 
@@ -204,10 +252,14 @@ class Store private constructor(private val prefs: SharedPreferences) {
 
     fun item(id: String): WaitItem? = waitItems().firstOrNull { it.id == id }
 
-    /** Item added through Share (screen 16): no nuts, no pause log entry. */
-    fun addSharedItem(item: WaitItem) {
-        prefs.edit { putString(KEY_ITEMS, Json.encodeToString(waitItems() + item)) }
+    /** Item saved through Share (screen 16): +15 cashews for every one, with or without a session. */
+    fun addSharedItem(item: WaitItem, today: LocalDate = LocalDate.now()): RewardInfo {
+        prefs.edit {
+            putString(KEY_ITEMS, Json.encodeToString(waitItems() + item))
+            putInt(KEY_CASHEWS, cashews + Rules.CASHEWS_PER_SAVED_ITEM)
+        }
         changed()
+        return RewardInfo(Rules.CASHEWS_PER_SAVED_ITEM, Game.streak(today, firstDay, lastBuyAnywayDay), item)
     }
 
     fun updateItem(item: WaitItem) {
@@ -249,19 +301,38 @@ class Store private constructor(private val prefs: SharedPreferences) {
         )
     }
 
-    /** 19 "Buy it with a heart": a planned treat, costs one heart, streak untouched. */
-    fun buyWithHeart(id: String, now: Long = System.currentTimeMillis()) {
-        val item = item(id) ?: return
-        spendHeart(epochToDate(now))
-        updateItem(item.copy(status = WaitItem.Status.BoughtWithHeart, decidedAt = now))
+    /**
+     * "Buy it". After the wait it's free; before the wait is over it costs a heart
+     * (status "bought with a heart"). The streak survives either way.
+     * Returns false if a heart was needed and none are left.
+     */
+    fun buy(id: String, now: Long = System.currentTimeMillis()): Boolean {
+        val item = item(id) ?: return false
+        val early = now < item.dueAt
+        if (early) {
+            if (heartsLeft(epochToDate(now)) <= 0) return false
+            spendHeart(epochToDate(now))
+        }
+        updateItem(item.copy(status = if (early) WaitItem.Status.BoughtWithHeart else WaitItem.Status.Bought, decidedAt = now))
+        return true
     }
 
-    /** 19 "Wait another day": +24 hours on the clock. Returns the updated item. */
-    fun waitAnotherDay(id: String): WaitItem? {
-        val item = item(id) ?: return null
-        val updated = item.copy(waitMillis = item.waitMillis + 24 * 3_600_000L, remindedAt = null)
-        updateItem(updated)
-        return updated
+    /** 19 "I already bought it": bought without waiting, so the streak starts again from today. */
+    fun alreadyBought(id: String, now: Long = System.currentTimeMillis()) {
+        item(id)?.let { updateItem(it.copy(status = WaitItem.Status.Bought, decidedAt = now)) }
+        prefs.edit { putLong(KEY_LAST_BUY_ANYWAY, epochToDate(now).toEpochDay()) }
+        changed()
+    }
+
+    /** "Buy it": after the short pause the shop opens for 5 minutes (no pause log entry). */
+    fun startBuySession(packageName: String, now: Long = System.currentTimeMillis()) {
+        saveSession(
+            ShopSession(
+                shopPackage = packageName, mode = SessionMode.Buy, openedAt = 0L,
+                startedAt = now, endsAt = now + Rules.BUY_SESSION_MINUTES * 60_000L,
+            )
+        )
+        changed()
     }
 
     fun markReminded(id: String, now: Long = System.currentTimeMillis()) {
@@ -275,12 +346,6 @@ class Store private constructor(private val prefs: SharedPreferences) {
 
     private fun epochToDate(millis: Long): LocalDate =
         java.time.Instant.ofEpochMilli(millis).atZone(java.time.ZoneId.systemDefault()).toLocalDate()
-
-    /** "I already bought it" (stage 4): the streak starts again from today. */
-    fun alreadyBought(today: LocalDate = LocalDate.now()) {
-        prefs.edit { putLong(KEY_LAST_BUY_ANYWAY, today.toEpochDay()) }
-        changed()
-    }
 
     fun heartsLeft(today: LocalDate = LocalDate.now()): Int {
         val month = prefs.getString(KEY_HEARTS_MONTH, null)?.let { runCatching { YearMonth.parse(it) }.getOrNull() }
@@ -321,6 +386,8 @@ class Store private constructor(private val prefs: SharedPreferences) {
         private const val KEY_SELECTED = "selected_packages"
         private const val KEY_ONBOARDING_DONE = "onboarding_done"
         private const val KEY_SESSION = "session"
+        private const val KEY_BONUS_MONTH = "bonus_paid_month"
+        private const val KEY_STREAK_BONUS = "streak_bonus_paid"
         private const val KEY_CLOSE_DAY = "close_reward_day"
         private const val KEY_CLOSE_COUNT = "close_reward_count"
         // v2: the card gained the Autostart step, so show it again to people who dismissed v1.

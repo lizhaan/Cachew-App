@@ -9,6 +9,7 @@ import androidx.work.WorkManager
 import androidx.work.workDataOf
 import app.cachew.R
 import app.cachew.data.Game
+import app.cachew.data.Rules
 import app.cachew.data.Store
 import app.cachew.data.WaitItem
 import java.time.Instant
@@ -27,6 +28,7 @@ object Reminders {
     const val CHANNEL = "reminders"
     const val KEY_ITEM_ID = "item_id"
     const val KEY_MOVED = "moved_to_morning"
+    const val KEY_NUDGE = "let_go_nudge"
 
     fun ensureChannel(context: Context) {
         val manager = context.getSystemService(NotificationManager::class.java)
@@ -60,10 +62,31 @@ object Reminders {
         )
     }
 
+    /**
+     * No answer to "Still want it?" for 7 days → one more nudge, "Let it go?".
+     * (Debug 1-minute test items get it after 2 minutes, so it can be tested.) Also quiet at night.
+     */
+    fun scheduleNudge(context: Context, item: WaitItem, now: Long = System.currentTimeMillis()) {
+        val zone = ZoneId.systemDefault()
+        val isTestMinute = item.waitMillis < 3_600_000L
+        val dueMillis = now + if (isTestMinute) 2 * 60_000L else Rules.LET_GO_NUDGE_DAYS * 24 * 3_600_000L
+        val due = LocalDateTime.ofInstant(Instant.ofEpochMilli(dueMillis), zone)
+        val shield = Store.get(context).nightShield
+        val (at, _) = if (isTestMinute) due to false else Game.reminderTime(due, shield.quietFrom, shield.quietTo)
+        val request = OneTimeWorkRequestBuilder<ReminderWorker>()
+            .setInitialDelay((at.atZone(zone).toInstant().toEpochMilli() - now).coerceAtLeast(0), TimeUnit.MILLISECONDS)
+            .setInputData(workDataOf(KEY_ITEM_ID to item.id, KEY_NUDGE to true))
+            .build()
+        WorkManager.getInstance(context).enqueueUniqueWork(nudgeName(item.id), ExistingWorkPolicy.REPLACE, request)
+    }
+
     fun cancel(context: Context, itemId: String) {
         WorkManager.getInstance(context).cancelUniqueWork(itemId)
+        WorkManager.getInstance(context).cancelUniqueWork(nudgeName(itemId))
         context.getSystemService(NotificationManager::class.java).cancel(itemId.hashCode())
     }
+
+    private fun nudgeName(itemId: String) = "$itemId-let-go"
 
     /** On app start: every waiting item that hasn't been reminded yet has a job (KEEP = don't reset existing ones). */
     fun ensureAll(context: Context) = pending(context).forEach { schedule(context, it, replace = false) }

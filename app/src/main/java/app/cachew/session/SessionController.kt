@@ -37,6 +37,13 @@ class SessionController(private val service: AccessibilityService) {
     /** A new app came to the front. */
     fun onForeground(pkg: String) {
         val entered = pkg != foreground
+        val s = store.session
+        // A "Buy it" visit ends as soon as the user leaves the shop: next time it's a normal pause.
+        if (s != null && s.mode == SessionMode.Buy && foreground == s.shopPackage && pkg != s.shopPackage) {
+            foreground = pkg
+            finish(s)
+            return
+        }
         foreground = pkg
         update(entered)
     }
@@ -65,7 +72,11 @@ class SessionController(private val service: AccessibilityService) {
         if (foreground != s.shopPackage) return overlays.hideAll()
 
         overlays.state.pill = pillText(s, now)
-        overlays.showSession(onPennyTap = { say(service.getString(R.string.session_share_hint)) })
+        if (s.mode == SessionMode.Buy) {
+            overlays.showSession(withPenny = false, onPennyTap = {}) // just the timer: she knows you waited
+            return
+        }
+        overlays.showSession(withPenny = true, onPennyTap = { say(service.getString(R.string.session_share_hint)) })
         if (entered) say(service.getString(R.string.session_penny_hint))
 
         val elapsed = now - s.startedAt
@@ -79,6 +90,7 @@ class SessionController(private val service: AccessibilityService) {
                 say(service.getString(R.string.session_two_minutes))
                 overlays.state.bounce++
             }
+            SessionMode.Buy -> Unit
         }
     }
 
@@ -113,7 +125,12 @@ class SessionController(private val service: AccessibilityService) {
         handler.removeCallbacks(tick)
         store.endSession()
         overlays.hideAll()
-        if (foreground == s.shopPackage) service.performGlobalAction(AccessibilityService.GLOBAL_ACTION_HOME)
+        if (foreground == s.shopPackage) {
+            if (s.mode == SessionMode.Buy) {
+                Toast.makeText(service, R.string.buy_session_over, Toast.LENGTH_LONG).show()
+            }
+            service.performGlobalAction(AccessibilityService.GLOBAL_ACTION_HOME)
+        }
     }
 
     /** Shows Penny's speech bubble for a few seconds. */
@@ -126,7 +143,13 @@ class SessionController(private val service: AccessibilityService) {
     private fun pillText(s: ShopSession, now: Long): String {
         val left = ((s.endsAt - now + 999) / 1000).coerceAtLeast(0)
         val time = "%d:%02d".format(left / 60, left % 60)
-        val mode = service.getString(if (s.mode == SessionMode.JustLook) R.string.session_mode_look else R.string.session_mode_specific)
+        val mode = service.getString(
+            when (s.mode) {
+                SessionMode.JustLook -> R.string.session_mode_look
+                SessionMode.Specific -> R.string.session_mode_specific
+                SessionMode.Buy -> R.string.session_mode_buy
+            }
+        )
         return service.getString(R.string.session_pill, time, mode)
     }
 

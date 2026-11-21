@@ -52,6 +52,7 @@ import app.cachew.ui.components.StatCard
 import app.cachew.data.ShopLabels
 import app.cachew.data.Store
 import app.cachew.pause.PauseActivity
+import app.cachew.reminders.Reminders
 import app.cachew.service.ShopWatchService
 import app.cachew.ui.components.CachewBackground
 import app.cachew.ui.components.GlassCard
@@ -70,7 +71,13 @@ import app.cachew.ui.theme.CachewType
 private val HHMM = DateTimeFormatter.ofPattern("HH:mm")
 
 @Composable
-fun DenScreen(onEditShops: () -> Unit, onTurnOn: () -> Unit, onOpenItem: (String) -> Unit, onNightShield: () -> Unit) {
+fun DenScreen(
+    onEditShops: () -> Unit,
+    onTurnOn: () -> Unit,
+    onOpenItem: (String) -> Unit,
+    onBoughtWithHeart: (String) -> Unit,
+    onNightShield: () -> Unit,
+) {
     val context = LocalContext.current
     val store = remember { Store.get(context) }
     val selected by store.selectedPackages.collectAsStateWithLifecycle()
@@ -93,10 +100,20 @@ fun DenScreen(onEditShops: () -> Unit, onTurnOn: () -> Unit, onOpenItem: (String
     editing?.let { item ->
         EditItemDialog(
             item = item,
+            heartsLeft = game.heartsLeft,
+            heartsRefill = game.heartsRefill.format(DateTimeFormatter.ofPattern("MMM d", java.util.Locale.US)),
             onDismiss = { editing = null },
             onSave = {
                 store.updateItem(it)
                 editing = null
+            },
+            onBuy = {
+                editing = null
+                // The wait isn't over: buying now costs a heart (streak kept), then screen 22.
+                if (store.buy(item.id)) {
+                    Reminders.cancel(context, item.id)
+                    onBoughtWithHeart(item.id)
+                }
             },
         )
     }
@@ -208,9 +225,16 @@ fun DenScreen(onEditShops: () -> Unit, onTurnOn: () -> Unit, onOpenItem: (String
     }
 }
 
-/** Rename / re-price an item (e.g. "Something from Temu" after Skip). */
+/** Rename / re-price a waiting item, or "Buy it" early with a heart. (Temporary den; stage 6 has the real list.) */
 @Composable
-private fun EditItemDialog(item: WaitItem, onDismiss: () -> Unit, onSave: (WaitItem) -> Unit) {
+private fun EditItemDialog(
+    item: WaitItem,
+    heartsLeft: Int,
+    heartsRefill: String,
+    onDismiss: () -> Unit,
+    onSave: (WaitItem) -> Unit,
+    onBuy: () -> Unit,
+) {
     var name by remember { mutableStateOf(item.title) }
     var price by remember { mutableStateOf(item.price?.let { if (it % 1.0 == 0.0) it.toLong().toString() else it.toString() }.orEmpty()) }
     AlertDialog(
@@ -228,6 +252,14 @@ private fun EditItemDialog(item: WaitItem, onDismiss: () -> Unit, onSave: (WaitI
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                 )
+                Spacer(Modifier.height(16.dp))
+                // "Buy it" before the wait is over: costs one of this month's hearts.
+                TextButton(onClick = onBuy, enabled = heartsLeft > 0) {
+                    Text(
+                        if (heartsLeft > 0) stringResource(R.string.buy_with_heart, heartsLeft)
+                        else stringResource(R.string.buy_no_hearts, heartsRefill)
+                    )
+                }
             }
         },
         confirmButton = {

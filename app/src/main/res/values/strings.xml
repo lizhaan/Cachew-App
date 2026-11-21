@@ -58,6 +58,7 @@
 
     <string name="pause_back_to_den">Back to the den</string>
     <string name="pause_continue_to">Continue to %1$s</string>
+    <string name="pause_body_buy">You waited for this one. One breath, then go get it.</string>
 
     <!-- 14 Questions -->
     <string name="questions_label">Pause · 2 questions</string>
@@ -93,6 +94,10 @@
     <string name="session_pill">%1$s left · %2$s</string>
     <string name="session_mode_look">just looking</string>
     <string name="session_mode_specific">specific</string>
+    <string name="session_mode_buy">buying</string>
+    <string name="buy_session_over">The shopping period has ended</string>
+    <string name="buy_with_heart">Buy it now · uses a heart (%1$d left)</string>
+    <string name="buy_no_hearts">No hearts left to buy early. They refill %1$s.</string>
     <string name="session_penny_hint">Like something? Tap me</string>
     <string name="session_share_hint">Tap Share → Cachew</string>
     <string name="session_two_minutes">2 minutes left</string>
@@ -123,8 +128,9 @@
         <item quantity="one">%d-day streak</item>
         <item quantity="other">%d-day streak</item>
     </plurals>
-    <string name="reward_quest_done">Quest done ✓</string>
     <string name="reward_goodnight">Goodnight, Penny</string>
+    <string name="reward_thanks">Thanks, Penny</string>
+    <string name="reward_to_stash">to the stash</string>
 
     <!-- 10 Night shield -->
     <string name="shield_title">Night shield</string>
@@ -149,8 +155,6 @@
     <string name="share_label_from">Shared from %1$s</string>
     <string name="share_unknown_shop">a shop</string>
     <string name="share_title">Into the waiting list</string>
-    <string name="share_saved">Penny will ask in %1$d hours.</string>
-    <string name="share_saved_minute">Penny will ask in 1 minute (test).</string>
 
     <!-- 18 Reminder notification -->
     <string name="reminders_channel">Waiting list reminders</string>
@@ -159,6 +163,9 @@
     <string name="reminder_body_price">Still want %1$s for %2$s?</string>
     <string name="reminder_body">Still want %1$s?</string>
     <string name="reminder_waited_till_morning">Penny waited till morning to ask.</string>
+    <string name="nudge_title">Let it go?</string>
+    <string name="nudge_body_price">A week has passed since %1$s was ready. Letting it go keeps %2$s.</string>
+    <string name="nudge_body">A week has passed since %1$s was ready. Maybe it\'s time to let it go.</string>
 
     <!-- 19 Still want it? -->
     <string name="still_label">Waiting list · %1$s later</string>
@@ -169,9 +176,8 @@
     <string name="still_insight_first">Most wants fade with a little time. Letting this one go starts your stash.</string>
     <string name="still_let_go_keep">Let it go · keep %1$s</string>
     <string name="still_let_go">Let it go</string>
-    <string name="still_buy_heart">Buy it with a heart</string>
-    <string name="still_wait_day">Wait another day</string>
-    <string name="still_waiting_more">Penny will ask again tomorrow.</string>
+    <string name="still_buy_waited">Buy it, I waited</string>
+    <string name="still_already_bought">I already bought it</string>
 
     <!-- 20 Win -->
     <string name="win_label">Kept, not spent</string>
@@ -182,11 +188,8 @@
     <string name="win_stash_grew">Penny\'s stash grew</string>
     <string name="win_level">Level %1$d · %2$s</string>
     <string name="win_level_reward">Level %1$d · %2$s · she got %3$s</string>
-    <string name="win_kept_in">kept in %1$s</string>
+    <string name="win_kept_in">saved in %1$s</string>
     <string name="win_day_streak">day streak</string>
-    <string name="win_share">Share my win</string>
-    <string name="win_share_text_amount">I kept %1$s instead of spending it on an impulse buy. Penny\'s winter stash: %2$d cashews 🐿️</string>
-    <string name="win_share_text">I let an impulse buy go. Penny\'s winter stash: %1$d cashews 🐿️</string>
 
     <!-- Edit item (temporary den, waiting list in stage 6) -->
     <string name="edit_item_title">Edit item</string>
@@ -200,7 +203,7 @@
 
     <!-- 21 Bought without a heart -->
     <string name="bought_title">Penny turned away</string>
-    <string name="bought_body">You bought it without a heart. Penny will be fine by morning, but the streak starts again. Next time, use a heart.</string>
+    <string name="bought_body">You bought it without waiting. Penny will be fine by morning, but the streak starts again. Tomorrow is a new day.</string>
     <string name="bought_ok">Okay, tomorrow is new</string>
     <string name="stat_streak">streak</string>
     <string name="stat_hearts_left">hearts left</string>

@@ -32,7 +32,12 @@ enum class EntryAction {
 }
 
 @Serializable
-enum class SessionMode { JustLook, Specific }
+enum class SessionMode {
+    JustLook,
+    Specific,
+    /** "Buy it" from the waiting list: 5 minutes, ends when the user leaves the shop. */
+    Buy,
+}
 
 /** The shop session after the choice screen (stored in Store so it survives a service restart). */
 @Serializable
@@ -71,7 +76,15 @@ data class WaitItem(
     val url: String? = null,
 ) {
     @Serializable
-    enum class Status { Waiting, Kept, BoughtWithHeart }
+    enum class Status {
+        Waiting,
+        /** "Let it go": not bought, its price counts as money saved. */
+        Kept,
+        /** "Buy it" after the wait, or "I already bought it". */
+        Bought,
+        /** "Buy it" before the wait was over: cost a heart, streak kept. */
+        BoughtWithHeart,
+    }
 
     val dueAt: Long get() = addedAt + waitMillis
 }
@@ -103,11 +116,9 @@ data class WinInfo(
     val heartsLeft: Int,
 )
 
-/** What screen 17 needs after "Add to waiting list". */
+/** What "Nice pause." (design-v2/06) needs after an item is saved through Share. */
 data class RewardInfo(
     val cashews: Int,
     val streak: Int,
-    /** First pause of the day: the "Pause before one shop" quest is done. */
-    val questDone: Boolean,
     val item: WaitItem,
 )

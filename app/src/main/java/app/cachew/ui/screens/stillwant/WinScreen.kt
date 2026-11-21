@@ -46,10 +46,9 @@ import java.time.LocalDate
 import java.time.format.TextStyle
 import java.util.Locale
 
-/** Screen 20: "+$64", Penny lying on a pile of cashews, level and three stats. */
+/** "Kept, not spent" (design-v2/07): "+$64", Penny lying on a pile of cashews, level and three stats. */
 @Composable
 fun WinScreen(info: WinInfo, onDone: () -> Unit) {
-    val context = LocalContext.current
 
     Column(
         Modifier
@@ -105,17 +104,8 @@ fun WinScreen(info: WinInfo, onDone: () -> Unit) {
             Spacer(Modifier.height(16.dp))
         }
 
-        PrimaryButton(
-            text = stringResource(R.string.win_share),
-            onClick = {
-                val text = info.amount?.let {
-                    context.getString(R.string.win_share_text_amount, Money.format(it, info.currency), info.stash)
-                } ?: context.getString(R.string.win_share_text, info.stash)
-                val send = Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, text)
-                context.startActivity(Intent.createChooser(send, null))
-            },
-        )
-        TextAction(stringResource(R.string.pause_back_to_den), onDone)
+        PrimaryButton(text = stringResource(R.string.pause_back_to_den), onClick = onDone)
+        Spacer(Modifier.height(16.dp))
     }
 }
 

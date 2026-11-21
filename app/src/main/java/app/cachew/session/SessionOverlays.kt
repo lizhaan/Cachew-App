@@ -30,12 +30,12 @@ internal class SessionOverlays(private val context: Context) {
 
     val sheetShowing: Boolean get() = sheet != null
 
-    /** Pill + Penny's circle. Calling it again while they're up does nothing. */
-    fun showSession(onPennyTap: () -> Unit) {
+    /** Pill (+ Penny's circle). Calling it again while they're up does nothing. */
+    fun showSession(withPenny: Boolean, onPennyTap: () -> Unit) {
         if (pill == null) {
             pill = add(params(Gravity.TOP or Gravity.CENTER_HORIZONTAL, touchable = false)) { SessionPill(state) }
         }
-        if (penny == null) {
+        if (withPenny && penny == null) {
             val y = (context.resources.displayMetrics.heightPixels * 0.36f).toInt()
             penny = add(params(Gravity.TOP or Gravity.END, touchable = true, y = y)) { PennyCircle(state, onPennyTap) }
         }

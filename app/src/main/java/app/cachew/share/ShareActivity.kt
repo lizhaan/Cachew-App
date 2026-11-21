@@ -11,8 +11,15 @@ import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import app.cachew.R
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import app.cachew.data.RewardInfo
 import app.cachew.data.ShopLabel
-import app.cachew.data.WaitItem
+import app.cachew.data.Store
+import app.cachew.pause.RewardScreen
+import java.time.LocalTime
 import app.cachew.ui.components.CachewBackground
 import app.cachew.ui.components.TileIcon
 import app.cachew.ui.theme.CachewColors
@@ -53,31 +60,44 @@ class ShareActivity : ComponentActivity() {
         setContent {
             CachewTheme {
                 CachewBackground(night = true) {
-                    ShareScreen(
-                        itemId = itemId,
-                        sharedText = text,
-                        url = url,
-                        fromPackage = fromPackage,
-                        webShop = url?.let(::shopFromDomain),
-                        thumbFile = File(filesDir, "thumbs/$itemId.jpg"),
-                        onSaved = ::onSaved,
-                    )
+                    val r = reward
+                    if (r == null) {
+                        ShareScreen(
+                            itemId = itemId,
+                            sharedText = text,
+                            url = url,
+                            fromPackage = fromPackage,
+                            webShop = url?.let(::shopFromDomain),
+                            thumbFile = File(filesDir, "thumbs/$itemId.jpg"),
+                            onSaved = { reward = it },
+                        )
+                    } else {
+                        val night = remember { Store.get(this@ShareActivity).nightShield.isNight(LocalTime.now()) }
+                        RewardScreen(r, night = night, onClose = ::afterReward)
+                    }
                 }
             }
         }
     }
 
+    /** Set after "Wait N hours": the screen switches to "Nice pause." */
+    private var reward by mutableStateOf<RewardInfo?>(null)
+
+    /**
+     * Leaving "Nice pause.": back into the shop while its session is still running
+     * (it sits right underneath this screen), otherwise to the phone's home screen.
+     */
+    private fun afterReward() {
+        val inSession = Store.get(this).session?.let { System.currentTimeMillis() < it.endsAt } == true
+        if (!inSession) {
+            startActivity(Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+        }
+        finish()
+    }
+
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
         outState.putString(KEY_ID, intent.getStringExtra(KEY_ID))
-    }
-
-    /** Back to the shop the user shared from; a small toast confirms. */
-    private fun onSaved(item: WaitItem) {
-        val hours = (item.waitMillis / 3_600_000L).toInt()
-        val msg = if (hours == 0) getString(R.string.share_saved_minute) else getString(R.string.share_saved, hours)
-        Toast.makeText(this, msg, Toast.LENGTH_SHORT).show()
-        finish()
     }
 
     companion object {

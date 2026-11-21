@@ -2,6 +2,7 @@ package app.cachew.ui
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import app.cachew.ui.screens.stillwant.BoughtWithHeartFlow
 import app.cachew.ui.screens.stillwant.StillWantFlow
 import app.cachew.ui.screens.nightshield.NightShieldScreen
 import androidx.compose.runtime.remember
@@ -35,6 +36,9 @@ import kotlinx.serialization.Serializable
 
 /** Screen 19 "Still want it?" for one waiting-list item (then 20 or 22). */
 @Serializable data class StillWantRoute(val itemId: String)
+
+/** Screen 22 "−1 heart" after "Buy it" on an item whose wait isn't over yet. */
+@Serializable data class HeartBuyRoute(val itemId: String)
 
 @Composable
 fun CachewNavHost(openItemId: String? = null, onItemOpened: () -> Unit = {}) {
@@ -93,12 +97,19 @@ fun CachewNavHost(openItemId: String? = null, onItemOpened: () -> Unit = {}) {
                 onEditShops = { nav.navigate(PickShopsRoute(onboarding = false)) },
                 onTurnOn = { nav.navigate(PermissionRoute(onboarding = false)) },
                 onOpenItem = { nav.navigate(StillWantRoute(it)) },
+                onBoughtWithHeart = { nav.navigate(HeartBuyRoute(it)) },
                 onNightShield = { nav.navigate(NightShieldRoute(onboarding = false)) },
             )
         }
         composable<StillWantRoute> { entry ->
             StillWantFlow(
                 itemId = entry.toRoute<StillWantRoute>().itemId,
+                onDone = { if (!nav.popBackStack()) nav.navigate(DenRoute) },
+            )
+        }
+        composable<HeartBuyRoute> { entry ->
+            BoughtWithHeartFlow(
+                itemId = entry.toRoute<HeartBuyRoute>().itemId,
                 onDone = { if (!nav.popBackStack()) nav.navigate(DenRoute) },
             )
         }

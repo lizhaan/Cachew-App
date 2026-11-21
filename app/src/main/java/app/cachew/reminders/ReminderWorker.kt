@@ -23,23 +23,34 @@ class ReminderWorker(context: Context, params: WorkerParameters) : CoroutineWork
     override suspend fun doWork(): Result {
         val id = inputData.getString(Reminders.KEY_ITEM_ID) ?: return Result.success()
         val moved = inputData.getBoolean(Reminders.KEY_MOVED, false)
+        val nudge = inputData.getBoolean(Reminders.KEY_NUDGE, false)
         val store = Store.get(applicationContext)
         val item = store.item(id) ?: return Result.success()
         if (item.status != WaitItem.Status.Waiting) return Result.success() // already decided
 
-        store.markReminded(id)
+        val ctx = applicationContext
+        if (!nudge) {
+            store.markReminded(id)
+            // If there's no answer for 7 days, ask once more: "Let it go?"
+            Reminders.scheduleNudge(ctx, item)
+        }
         if (!canNotify()) return Result.success() // permission refused: the den still shows "ready"
 
-        Reminders.ensureChannel(applicationContext)
-        val ctx = applicationContext
-        val hours = (item.waitMillis / 3_600_000L).toInt()
-        val title = if (hours == 0) ctx.getString(R.string.reminder_title_short) else ctx.getString(R.string.reminder_title, hours)
-        val question = if (item.price != null) {
-            ctx.getString(R.string.reminder_body_price, item.title, Money.format(item.price, item.currency))
+        Reminders.ensureChannel(ctx)
+        val price = item.price?.let { Money.format(it, item.currency) }
+        val title: String
+        val body: String
+        if (nudge) {
+            title = ctx.getString(R.string.nudge_title)
+            body = if (price != null) ctx.getString(R.string.nudge_body_price, item.title, price)
+            else ctx.getString(R.string.nudge_body, item.title)
         } else {
-            ctx.getString(R.string.reminder_body, item.title)
+            val hours = (item.waitMillis / 3_600_000L).toInt()
+            title = if (hours == 0) ctx.getString(R.string.reminder_title_short) else ctx.getString(R.string.reminder_title, hours)
+            val question = if (price != null) ctx.getString(R.string.reminder_body_price, item.title, price)
+            else ctx.getString(R.string.reminder_body, item.title)
+            body = if (moved) question + " " + ctx.getString(R.string.reminder_waited_till_morning) else question
         }
-        val body = if (moved) question + " " + ctx.getString(R.string.reminder_waited_till_morning) else question
 
         // Tapping opens "Still want it?" (screen 19) for this item.
         val open = Intent(ctx, MainActivity::class.java)
