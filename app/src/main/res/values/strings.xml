@@ -1,5 +1,5 @@
 <resources>
-    <!-- The mascot is called "Cachew" in all user-facing text (never "Penny"). -->
+    <!-- The app is "Cachew"; the squirrel mascot is "Penny". The currency is always "cashews", never "nuts". -->
     <string name="app_name">Cachew</string>
 
     <!-- 08 Pick shops -->
@@ -52,9 +52,9 @@
     <!-- 13 Pause -->
     <string name="pause_pill">%1$s · opened at %2$s</string>
     <string name="pause_title">Pause. Breathe.</string>
-    <string name="pause_body_day">You\'re in a shop. Cachew\'s got a couple of questions.</string>
-    <string name="pause_body_night">It\'s late and you\'re in a shop. Cachew\'s got a couple of questions.</string>
-    <string name="pause_answer">Answer Cachew</string>
+    <string name="pause_body_day">You\'re in a shop. Penny\'s got a couple of questions.</string>
+    <string name="pause_body_night">It\'s late and you\'re in a shop. Penny\'s got a couple of questions.</string>
+    <string name="pause_answer">Answer Penny</string>
 
     <string name="pause_back_to_den">Back to the den</string>
     <string name="pause_continue_to">Continue to %1$s</string>
@@ -85,7 +85,7 @@
     <string name="decision_body_risky">Those are usually the buys you regret. Want to let it wait?</string>
     <string name="decision_body_planned">Sounds planned. A short wait still never hurts.</string>
     <string name="decision_wait_title">Add to waiting list</string>
-    <string name="decision_wait_body">Tell Cachew what it was. We\'ll ask again later.</string>
+    <string name="decision_wait_body">Tell Penny what it was. We\'ll ask again later.</string>
     <string name="decision_heart_title">Use a heart</string>
     <string name="decision_heart_body">A planned treat. No guilt, no streak loss.</string>
     <string name="decision_heart_empty">No hearts left. They refill %1$s.</string>
@@ -105,17 +105,17 @@
     <string name="item_default_name">Something from %1$s</string>
 
     <!-- 17 Reward -->
-    <string name="reward_nuts">+%1$d nuts</string>
+    <string name="reward_cashews">+%1$d cashews</string>
     <string name="reward_title">Nice pause.</string>
-    <string name="reward_body_price">Cachew\'s holding your %1$s for %2$d hours.</string>
-    <string name="reward_body_no_price">Cachew\'s holding it for %1$d hours.</string>
-    <string name="reward_body_minute">Cachew\'s holding it for 1 minute (test).</string>
+    <string name="reward_body_price">Penny\'s holding your %1$s for %2$d hours.</string>
+    <string name="reward_body_no_price">Penny\'s holding it for %1$d hours.</string>
+    <string name="reward_body_minute">Penny\'s holding it for 1 minute (test).</string>
     <plurals name="streak_days">
         <item quantity="one">%d-day streak</item>
         <item quantity="other">%d-day streak</item>
     </plurals>
     <string name="reward_quest_done">Quest done ✓</string>
-    <string name="reward_goodnight">Goodnight, Cachew</string>
+    <string name="reward_goodnight">Goodnight, Penny</string>
 
     <!-- 10 Night shield -->
     <string name="shield_title">Night shield</string>
@@ -140,8 +140,8 @@
     <string name="share_label_from">Shared from %1$s</string>
     <string name="share_unknown_shop">a shop</string>
     <string name="share_title">Into the waiting list</string>
-    <string name="share_saved">Cachew will ask in %1$d hours.</string>
-    <string name="share_saved_minute">Cachew will ask in 1 minute (test).</string>
+    <string name="share_saved">Penny will ask in %1$d hours.</string>
+    <string name="share_saved_minute">Penny will ask in 1 minute (test).</string>
 
     <!-- 18 Reminder notification -->
     <string name="reminders_channel">Waiting list reminders</string>
@@ -149,7 +149,7 @@
     <string name="reminder_title_short">Your wait is up</string>
     <string name="reminder_body_price">Still want %1$s for %2$s?</string>
     <string name="reminder_body">Still want %1$s?</string>
-    <string name="reminder_waited_till_morning">Cachew waited till morning to ask.</string>
+    <string name="reminder_waited_till_morning">Penny waited till morning to ask.</string>
 
     <!-- 19 Still want it? -->
     <string name="still_label">Waiting list · %1$s later</string>
@@ -162,20 +162,22 @@
     <string name="still_let_go">Let it go</string>
     <string name="still_buy_heart">Buy it with a heart</string>
     <string name="still_wait_day">Wait another day</string>
-    <string name="still_waiting_more">Cachew will ask again tomorrow.</string>
+    <string name="still_waiting_more">Penny will ask again tomorrow.</string>
 
     <!-- 20 Win -->
     <string name="win_label">Kept, not spent</string>
     <string name="win_let_go">Let go ✓</string>
-    <string name="win_stash">Cachew\'s winter stash · %1$s</string>
-    <string name="win_levelled_up">Cachew levelled up</string>
-    <string name="win_stash_grew">Cachew\'s stash grew</string>
+    <string name="win_stash">Penny\'s stash: %1$d</string>
+    <string name="win_stash_earned">+%1$d cashews · Penny\'s stash: %2$d</string>
+    <string name="win_levelled_up">Penny levelled up</string>
+    <string name="win_stash_grew">Penny\'s stash grew</string>
     <string name="win_level">Level %1$d · %2$s</string>
+    <string name="win_level_reward">Level %1$d · %2$s · she got %3$s</string>
     <string name="win_kept_in">kept in %1$s</string>
     <string name="win_day_streak">day streak</string>
     <string name="win_share">Share my win</string>
-    <string name="win_share_text_amount">I kept %1$s instead of spending it on an impulse buy. Cachew\'s winter stash: %2$s 🐿️</string>
-    <string name="win_share_text">I let an impulse buy go. Cachew\'s winter stash: %1$s 🐿️</string>
+    <string name="win_share_text_amount">I kept %1$s instead of spending it on an impulse buy. Penny\'s winter stash: %2$d cashews 🐿️</string>
+    <string name="win_share_text">I let an impulse buy go. Penny\'s winter stash: %1$d cashews 🐿️</string>
 
     <!-- Edit item (temporary den, waiting list in stage 6) -->
     <string name="edit_item_title">Edit item</string>
@@ -188,15 +190,15 @@
     <string name="den_item_minutes_left">%1$dm left</string>
 
     <!-- 21 Bought without a heart -->
-    <string name="bought_title">Cachew turned away</string>
-    <string name="bought_body">You bought it without a heart. Cachew will be fine by morning, but the streak starts again. Next time, use a heart.</string>
+    <string name="bought_title">Penny turned away</string>
+    <string name="bought_body">You bought it without a heart. Penny will be fine by morning, but the streak starts again. Next time, use a heart.</string>
     <string name="bought_ok">Okay, tomorrow is new</string>
     <string name="stat_streak">streak</string>
     <string name="stat_hearts_left">hearts left</string>
 
     <!-- 22 Used a heart -->
     <string name="heart_title">−1 heart</string>
-    <string name="heart_body">Cachew turned away for a bit. You used a heart, so your streak is safe, but hearts run out fast.</string>
+    <string name="heart_body">Penny turned away for a bit. You used a heart, so your streak is safe, but hearts run out fast.</string>
     <plurals name="hearts_left_in_month">
         <item quantity="one">%1$d heart left in %2$s</item>
         <item quantity="other">%1$d hearts left in %2$s</item>
@@ -206,7 +208,7 @@
 
     <!-- Temporary den (real home screen comes in stage 6) -->
     <string name="den_greeting">Good evening</string>
-    <string name="den_title">Cachew\'s den</string>
+    <string name="den_title">Penny\'s den</string>
     <string name="den_watching_label">Pause before</string>
     <string name="den_edit_shops">Edit shops</string>
     <string name="den_try_pause">Try a pause (demo)</string>
@@ -216,7 +218,24 @@
     <string name="den_service_stuck">Pauses stopped after an update: turn Cachew off and on in Accessibility.</string>
     <string name="den_fix">Fix</string>
     <string name="den_placeholder_note">The full den arrives in a later stage.</string>
-    <string name="den_nuts">nuts</string>
+    <string name="den_cashews">cashews</string>
     <string name="den_waiting_label">Waiting</string>
     <string name="den_waiting_empty">Nothing waiting yet.</string>
+
+    <!-- Levels, by cashews in the stash (thresholds in data/Rules.kt). Index = level − 1. -->
+    <string-array name="level_names">
+        <item>Kit</item>
+        <item>Forager</item>
+        <item>Keeper</item>
+        <item>Stasher</item>
+        <item>Winter-ready</item>
+    </string-array>
+    <!-- What Penny gets on reaching each level ("she got a winter scarf"). Level 1 has none. -->
+    <string-array name="level_rewards">
+        <item></item>
+        <item>a winter scarf</item>
+        <item>a warm hat</item>
+        <item>a flashlight for the den</item>
+        <item>a tree-hollow house</item>
+    </string-array>
 </resources>

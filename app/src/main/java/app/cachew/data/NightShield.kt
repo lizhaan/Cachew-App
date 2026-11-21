@@ -26,8 +26,8 @@ data class NightShield(
     val quietTo: LocalTime get() = if (on) to else QUIET_TO_WHEN_OFF
 
     companion object {
-        val QUIET_FROM_WHEN_OFF: LocalTime = LocalTime.of(22, 0)
-        val QUIET_TO_WHEN_OFF: LocalTime = LocalTime.of(9, 0)
+        val QUIET_FROM_WHEN_OFF: LocalTime = Rules.QUIET_FROM_WHEN_OFF
+        val QUIET_TO_WHEN_OFF: LocalTime = Rules.QUIET_TO_WHEN_OFF
 
         /** A window needs two different times ("from 23:00 to 23:00" means nothing). */
         fun isValid(from: LocalTime, to: LocalTime): Boolean = from != to

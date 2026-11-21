@@ -88,7 +88,7 @@ fun DecisionScreen(
             GlassCard(Modifier.fillMaxWidth(), selected = true, onClick = onWait) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(stringResource(R.string.decision_wait_title), style = CardTitle, color = CachewColors.Title, modifier = Modifier.weight(1f))
-                    Text("+${Game.NUTS_PER_PAUSE}", fontFamily = Inter, fontWeight = FontWeight.ExtraBold, fontSize = 18.sp, color = CachewColors.PurpleText)
+                    Text("+${Game.CASHEWS_PER_PAUSE}", fontFamily = Inter, fontWeight = FontWeight.ExtraBold, fontSize = 18.sp, color = CachewColors.PurpleText)
                     Spacer(Modifier.width(6.dp))
                     Image(painterResource(R.drawable.ic_cashew), contentDescription = null, modifier = Modifier.size(26.dp))
                 }

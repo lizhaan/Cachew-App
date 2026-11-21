@@ -80,7 +80,7 @@ fun RewardScreen(reward: RewardInfo, night: Boolean, onClose: () -> Unit) {
     OutcomeLayout(
         content = {
             Spacer(Modifier.height(28.dp))
-            NutsChip(reward.nuts)
+            CashewsChip(reward.cashews)
             Spacer(Modifier.height(12.dp))
             Penny(PennyPose.Love2, 280.dp)
             Spacer(Modifier.height(8.dp))
@@ -125,7 +125,7 @@ fun RewardScreen(reward: RewardInfo, night: Boolean, onClose: () -> Unit) {
 }
 
 @Composable
-private fun NutsChip(nuts: Int) {
+private fun CashewsChip(cashews: Int) {
     val shape = RoundedCornerShape(50)
     Row(
         Modifier
@@ -137,11 +137,11 @@ private fun NutsChip(nuts: Int) {
     ) {
         Image(painterResource(R.drawable.ic_cashew), contentDescription = null, modifier = Modifier.size(26.dp))
         Spacer(Modifier.width(10.dp))
-        Text(stringResource(R.string.reward_nuts, nuts), fontFamily = Inter, fontWeight = FontWeight.ExtraBold, fontSize = 19.sp, color = CachewColors.Title)
+        Text(stringResource(R.string.reward_cashews, cashews), fontFamily = Inter, fontWeight = FontWeight.ExtraBold, fontSize = 19.sp, color = CachewColors.Title)
     }
 }
 
-/** Screen 21 "Cachew turned away" (bought without a heart). */
+/** Screen 21 "Penny turned away" (bought without a heart). */
 @Composable
 fun BoughtScreen(game: GameSnapshot, onBackToShop: () -> Unit, onBackToDen: () -> Unit) {
     OutcomeLayout(

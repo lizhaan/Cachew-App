@@ -14,6 +14,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import app.cachew.BuildConfig
 import app.cachew.R
+import app.cachew.data.Rules
 import app.cachew.ui.theme.CachewColors
 import app.cachew.ui.theme.CachewSize
 import app.cachew.ui.theme.CachewType
@@ -31,7 +32,7 @@ fun WaitForPicker(hours: Int, onHours: (Int) -> Unit) {
         Text(stringResource(R.string.item_wait_for), style = CachewType.Body.copy(fontSize = 17.sp, fontWeight = FontWeight.SemiBold), color = CachewColors.TextSecondary)
         Spacer(Modifier.height(10.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(CachewSize.Gap)) {
-            listOf(24, 48, 72).forEach { h ->
+            Rules.WAIT_HOURS_OPTIONS.forEach { h ->
                 val testMinute = h == 24 && hours == TEST_MINUTE
                 ChoiceTile(
                     selected = hours == h || testMinute,

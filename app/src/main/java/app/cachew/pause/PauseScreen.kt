@@ -72,7 +72,7 @@ import app.cachew.ui.theme.Inter
 import java.util.Date
 import kotlin.math.ceil
 
-private const val PAUSE_SECONDS = 10
+private const val PAUSE_SECONDS = app.cachew.data.Rules.PAUSE_SECONDS
 
 /** The steps of one pause. Saved as an enum so it survives the activity being recreated. */
 private enum class Step { Countdown, Questions, Decision, Item, Reward, HeartUsed, Bought }

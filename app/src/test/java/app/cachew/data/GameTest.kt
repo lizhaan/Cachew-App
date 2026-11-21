@@ -137,12 +137,21 @@ class GameTest {
 
     // ---- Levels ---------------------------------------------------------------------
 
-    @Test fun levels_byKeptMoney() {
-        assertEquals("Kit", Game.levelFor(0.0).name)
-        assertEquals("Forager", Game.levelFor(64.0).name)
-        assertEquals("Keeper", Game.levelFor(212.0).name)
-        assertEquals("Stash Master", Game.levelFor(5000.0).name)
-        assertEquals(null, Game.nextLevel(Game.levelFor(5000.0)))
+    @Test fun levels_byCashewsInStash() {
+        assertEquals(1, Game.levelFor(0).number)
+        assertEquals(1, Game.levelFor(49).number)
+        assertEquals(2, Game.levelFor(50).number)   // Forager: winter scarf
+        assertEquals(2, Game.levelFor(99).number)   // mockup 07: "Penny's stash: 99", Level 2
+        assertEquals(4, Game.levelFor(400).number)  // Stasher
+        assertEquals(5, Game.levelFor(5000).number) // Winter-ready
+        assertEquals(null, Game.nextLevel(Game.levelFor(5000)))
+        assertEquals(150, Game.nextLevel(Game.levelFor(60))?.from)
+    }
+
+    @Test fun letGo_oneCashewPerDollar() {
+        assertEquals(64, Game.cashewsForLetGo(64.0))
+        assertEquals(20, Game.cashewsForLetGo(19.99))
+        assertEquals(0, Game.cashewsForLetGo(null))
     }
 
     // ---- Money --------------------------------------------------------------------

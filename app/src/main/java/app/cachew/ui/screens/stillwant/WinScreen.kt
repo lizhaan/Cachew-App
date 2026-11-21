@@ -24,6 +24,7 @@ import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringArrayResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -45,11 +46,10 @@ import java.time.LocalDate
 import java.time.format.TextStyle
 import java.util.Locale
 
-/** Screen 20: "+$64", Cachew lying on a pile of cashews, level and three stats. */
+/** Screen 20: "+$64", Penny lying on a pile of cashews, level and three stats. */
 @Composable
 fun WinScreen(info: WinInfo, onDone: () -> Unit) {
     val context = LocalContext.current
-    val stash = Money.format(info.stash, info.currency)
 
     Column(
         Modifier
@@ -78,14 +78,23 @@ fun WinScreen(info: WinInfo, onDone: () -> Unit) {
             Spacer(Modifier.height(8.dp))
             StashPile()
             Spacer(Modifier.height(10.dp))
-            Text(stringResource(R.string.win_stash, stash), style = CachewType.Body.copy(fontWeight = FontWeight.SemiBold), color = CachewColors.Text)
+            Text(
+                if (info.cashewsEarned > 0) stringResource(R.string.win_stash_earned, info.cashewsEarned, info.stash)
+                else stringResource(R.string.win_stash, info.stash),
+                style = CachewType.Body.copy(fontWeight = FontWeight.SemiBold), color = CachewColors.Text)
             Text(
                 stringResource(if (info.levelledUp) R.string.win_levelled_up else R.string.win_stash_grew),
                 style = CachewType.H1.copy(fontSize = 32.sp),
                 color = CachewColors.Title,
                 textAlign = TextAlign.Center,
             )
-            Text(stringResource(R.string.win_level, info.level.number, info.level.name), style = CachewType.Body.copy(fontSize = 18.sp), color = CachewColors.TextSecondary)
+            val levelName = stringArrayResource(R.array.level_names)[info.level.number - 1]
+            val reward = stringArrayResource(R.array.level_rewards)[info.level.number - 1]
+            Text(
+                if (info.levelledUp && reward.isNotEmpty()) stringResource(R.string.win_level_reward, info.level.number, levelName, reward)
+                else stringResource(R.string.win_level, info.level.number, levelName),
+                textAlign = TextAlign.Center,
+                style = CachewType.Body.copy(fontSize = 18.sp), color = CachewColors.TextSecondary)
             Spacer(Modifier.height(20.dp))
             val month = LocalDate.now().month.getDisplayName(TextStyle.SHORT, Locale.US)
             Row(horizontalArrangement = Arrangement.spacedBy(CachewSize.Gap)) {
@@ -100,8 +109,8 @@ fun WinScreen(info: WinInfo, onDone: () -> Unit) {
             text = stringResource(R.string.win_share),
             onClick = {
                 val text = info.amount?.let {
-                    context.getString(R.string.win_share_text_amount, Money.format(it, info.currency), stash)
-                } ?: context.getString(R.string.win_share_text, stash)
+                    context.getString(R.string.win_share_text_amount, Money.format(it, info.currency), info.stash)
+                } ?: context.getString(R.string.win_share_text, info.stash)
                 val send = Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, text)
                 context.startActivity(Intent.createChooser(send, null))
             },

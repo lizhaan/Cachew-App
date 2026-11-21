@@ -18,8 +18,9 @@ enum class Decision { Waiting, Heart, Bought }
  */
 object Game {
 
-    const val NUTS_PER_PAUSE = 15
-    const val HEARTS_PER_MONTH = 3
+    // Kept until stage 3 replaces "Add to waiting list" (v2: cashews come from Share instead).
+    const val CASHEWS_PER_PAUSE = Rules.CASHEWS_PER_SAVED_ITEM
+    const val HEARTS_PER_MONTH = Rules.HEARTS_PER_MONTH
 
     // ---- Streak: "Days in a row without an impulse buy" (mockup 07) -------------------
 
@@ -47,10 +48,10 @@ object Game {
     /** The day hearts come back: the 1st of next month. */
     fun heartsRefillDate(today: LocalDate): LocalDate = today.withDayOfMonth(1).plusMonths(1)
 
-    // ---- Night (until stage 5 makes it configurable) ----------------------------------
+    // ---- Night shield window -----------------------------------------------------------
 
-    val DEFAULT_NIGHT_FROM: LocalTime = LocalTime.of(23, 0)
-    val DEFAULT_NIGHT_TO: LocalTime = LocalTime.of(7, 0)
+    val DEFAULT_NIGHT_FROM: LocalTime = Rules.DEFAULT_NIGHT_FROM
+    val DEFAULT_NIGHT_TO: LocalTime = Rules.DEFAULT_NIGHT_TO
 
     /** True if [time] is inside the from→to window; windows that cross midnight work too. */
     fun isNight(time: LocalTime, from: LocalTime = DEFAULT_NIGHT_FROM, to: LocalTime = DEFAULT_NIGHT_TO): Boolean =
@@ -59,7 +60,7 @@ object Game {
     /**
      * Reminders only come in the daytime. If [due] falls inside the night window, the reminder
      * moves to the end of the window (07:00); the Boolean says whether it was moved
-     * (then the text adds "Cachew waited till morning to ask.").
+     * (then the text adds "Penny waited till morning to ask.").
      */
     fun reminderTime(
         due: LocalDateTime,
@@ -72,22 +73,25 @@ object Game {
         return morning.atTime(to) to true
     }
 
-    // ---- Levels (by total money kept) ---------------------------------------------------
+    // ---- Levels (by cashews in the stash) ------------------------------------------------
 
-    data class Level(val number: Int, val name: String, val from: Double)
+    /**
+     * Penny's level: 1 Kit, 2 Forager, 3 Keeper, 4 Stasher, 5 Winter-ready.
+     * [from] = cashews needed. Names and rewards ("a winter scarf") live in strings.xml,
+     * indexed by [number] − 1. The stash never shrinks, so a level is never lost.
+     */
+    data class Level(val number: Int, val from: Int)
 
-    val LEVELS = listOf(
-        Level(1, "Kit", 0.0),
-        Level(2, "Forager", 50.0),
-        Level(3, "Keeper", 150.0),
-        Level(4, "Hoarder", 400.0),
-        Level(5, "Stash Master", 1000.0),
-    )
+    val LEVELS: List<Level> = Rules.LEVEL_THRESHOLDS.mapIndexed { i, from -> Level(i + 1, from) }
 
-    fun levelFor(kept: Double): Level = LEVELS.last { kept >= it.from }
+    fun levelFor(cashews: Int): Level = LEVELS.last { cashews >= it.from }
 
     /** The level after this one, or null at the top. */
     fun nextLevel(level: Level): Level? = LEVELS.getOrNull(level.number)
+
+    /** "Let it go" reward: one cashew per dollar, rounded ($19.99 → 20). Null price → 0. */
+    fun cashewsForLetGo(price: Double?): Int =
+        price?.let { Math.round(it * Rules.CASHEWS_PER_DOLLAR_LET_GO).toInt() } ?: 0
 
     // ---- Decision headline (screen 15) ---------------------------------------------------
 

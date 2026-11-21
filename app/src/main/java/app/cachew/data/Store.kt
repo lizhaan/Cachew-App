@@ -21,15 +21,28 @@ import java.time.YearMonth
 class Store private constructor(private val prefs: SharedPreferences) {
 
     init {
-        // One-off: early test builds saved items in the phone's currency (UAH). There is no
-        // currency setting yet, so everything is dollars now.
-        if (!prefs.getBoolean(KEY_USD_MIGRATED, false)) {
+        migrate()
+    }
+
+    /**
+     * One-off data upgrades, run once per step on the phones that still have older data.
+     * [KEY_DATA_VERSION] remembers how far a phone got; new steps go at the end.
+     */
+    private fun migrate() {
+        var version = prefs.getInt(KEY_DATA_VERSION, if (prefs.getBoolean(KEY_USD_MIGRATED, false)) 1 else 0)
+        if (version < 1) {
+            // Early test builds saved items in the phone's currency (UAH); everything is dollars now.
             val items = readList<WaitItem>(KEY_ITEMS).map { it.copy(currency = Money.DEFAULT_CURRENCY) }
             prefs.edit {
                 putString(KEY_ITEMS, Json.encodeToString(items))
                 remove(KEY_CURRENCY)
-                putBoolean(KEY_USD_MIGRATED, true)
             }
+            version = 1
+        }
+        // Stage 3 (v2) adds step 2 here: the pause log gets a new format.
+        prefs.edit {
+            putInt(KEY_DATA_VERSION, version)
+            remove(KEY_USD_MIGRATED)
         }
     }
 
@@ -78,7 +91,7 @@ class Store private constructor(private val prefs: SharedPreferences) {
         return runCatching { Json.decodeFromString<Map<String, Long>>(raw) }.getOrDefault(emptyMap())
     }
 
-    // --- Game: nuts, streak, hearts, pause log, waiting list -------------------------
+    // --- Game: cashews, streak, hearts, pause log, waiting list -------------------------
     // Rules live in Game.kt; Store only keeps the raw facts (dates, counts, lists).
 
     /** Bumped after every game change, so screens that show counters can refresh. */
@@ -89,15 +102,15 @@ class Store private constructor(private val prefs: SharedPreferences) {
     var nightShield: NightShield
         get() = NightShield(
             on = prefs.getBoolean(KEY_SHIELD_ON, true),
-            from = LocalTime.ofSecondOfDay(prefs.getInt(KEY_SHIELD_FROM, 23 * 60) * 60L),
-            to = LocalTime.ofSecondOfDay(prefs.getInt(KEY_SHIELD_TO, 7 * 60) * 60L),
+            from = LocalTime.ofSecondOfDay(prefs.getInt(KEY_SHIELD_FROM, Rules.DEFAULT_NIGHT_FROM.toMinutes()) * 60L),
+            to = LocalTime.ofSecondOfDay(prefs.getInt(KEY_SHIELD_TO, Rules.DEFAULT_NIGHT_TO.toMinutes()) * 60L),
             strict = prefs.getBoolean(KEY_SHIELD_STRICT, true),
         )
         set(value) {
             prefs.edit {
                 putBoolean(KEY_SHIELD_ON, value.on)
-                putInt(KEY_SHIELD_FROM, value.from.hour * 60 + value.from.minute)
-                putInt(KEY_SHIELD_TO, value.to.hour * 60 + value.to.minute)
+                putInt(KEY_SHIELD_FROM, value.from.toMinutes())
+                putInt(KEY_SHIELD_TO, value.to.toMinutes())
                 putBoolean(KEY_SHIELD_STRICT, value.strict)
             }
             changed()
@@ -105,7 +118,7 @@ class Store private constructor(private val prefs: SharedPreferences) {
 
     /** Default "Wait for" choice (Me → Waiting time in stage 6). */
     var defaultWaitHours: Int
-        get() = prefs.getInt(KEY_WAIT_HOURS, 48)
+        get() = prefs.getInt(KEY_WAIT_HOURS, Rules.DEFAULT_WAIT_HOURS)
         set(value) = prefs.edit { putInt(KEY_WAIT_HOURS, value) }
 
     /** Currency for new items (a Me setting later); US dollars by default. */
@@ -114,7 +127,7 @@ class Store private constructor(private val prefs: SharedPreferences) {
         set(value) = prefs.edit { putString(KEY_CURRENCY, value) }
 
     fun snapshot(today: LocalDate = LocalDate.now()): GameSnapshot = GameSnapshot(
-        nuts = prefs.getInt(KEY_NUTS, 0),
+        cashews = cashews,
         streak = Game.streak(today, firstDay, lastBuyAnywayDay),
         heartsLeft = heartsLeft(today),
         heartsRefill = Game.heartsRefillDate(today),
@@ -127,19 +140,20 @@ class Store private constructor(private val prefs: SharedPreferences) {
     fun pauseLog(): List<PauseRecord> = readList(KEY_LOG)
 
     /**
-     * "Add to waiting list" + "Wait N hours" / "Skip": +15 nuts, ticks today's quest,
+     * "Add to waiting list" + "Wait N hours" / "Skip": +15 cashews, ticks today's quest,
      * logs the pause and saves the item. No quiet window here (the pause should come back).
+     * (v1 flow; stage 3 replaces it.)
      */
     fun addToWaitingList(record: PauseRecord, item: WaitItem, today: LocalDate = LocalDate.now()): RewardInfo {
         val questDone = prefs.getLong(KEY_QUEST_DAY, NO_DAY) != today.toEpochDay()
         prefs.edit {
-            putInt(KEY_NUTS, prefs.getInt(KEY_NUTS, 0) + Game.NUTS_PER_PAUSE)
+            putInt(KEY_CASHEWS, cashews + Game.CASHEWS_PER_PAUSE)
             putLong(KEY_QUEST_DAY, today.toEpochDay())
             putString(KEY_ITEMS, Json.encodeToString(waitItems() + item))
             putString(KEY_LOG, Json.encodeToString(pauseLog() + record))
         }
         changed()
-        return RewardInfo(Game.NUTS_PER_PAUSE, Game.streak(today, firstDay, lastBuyAnywayDay), questDone, item)
+        return RewardInfo(Game.CASHEWS_PER_PAUSE, Game.streak(today, firstDay, lastBuyAnywayDay), questDone, item)
     }
 
     /** "Use a heart": one heart less this month, streak untouched. */
@@ -173,8 +187,8 @@ class Store private constructor(private val prefs: SharedPreferences) {
         changed()
     }
 
-    /** Money kept by letting things go, all time (the "winter stash"). */
-    fun keptTotal(): Double = keptItems().sumOf { it.price ?: 0.0 }
+    /** Penny's winter stash. Only ever grows; decides her level (Game.levelFor). */
+    val cashews: Int get() = prefs.getInt(KEY_CASHEWS, 0)
 
     fun keptIn(month: YearMonth): Double = keptItems()
         .filter { it.decidedAt != null && YearMonth.from(epochToDate(it.decidedAt)) == month }
@@ -182,21 +196,26 @@ class Store private constructor(private val prefs: SharedPreferences) {
 
     private fun keptItems() = waitItems().filter { it.status == WaitItem.Status.Kept }
 
-    /** 19 "Let it go": the item is kept (not bought); its price joins the stash. */
+    /**
+     * 19 "Let it go": the item is kept (not bought), its price counts as money saved,
+     * and Penny gets one cashew per dollar.
+     */
     fun letGo(id: String, now: Long = System.currentTimeMillis()): WinInfo? {
         val item = item(id) ?: return null
-        val levelBefore = Game.levelFor(keptTotal())
+        val before = cashews
+        val earned = Game.cashewsForLetGo(item.price)
+        prefs.edit { putInt(KEY_CASHEWS, before + earned) }
         updateItem(item.copy(status = WaitItem.Status.Kept, decidedAt = now))
         val today = epochToDate(now)
-        val stash = keptTotal()
-        val level = Game.levelFor(stash)
+        val level = Game.levelFor(before + earned)
         return WinInfo(
             amount = item.price,
             currency = item.currency,
-            stash = stash,
+            cashewsEarned = earned,
+            stash = before + earned,
             keptThisMonth = keptIn(YearMonth.from(today)),
             level = level,
-            levelledUp = level.number > levelBefore.number,
+            levelledUp = level.number > Game.levelFor(before).number,
             streak = Game.streak(today, firstDay, lastBuyAnywayDay),
             heartsLeft = heartsLeft(today),
         )
@@ -256,6 +275,8 @@ class Store private constructor(private val prefs: SharedPreferences) {
     private val lastBuyAnywayDay: LocalDate?
         get() = prefs.getLong(KEY_LAST_BUY_ANYWAY, NO_DAY).takeIf { it != NO_DAY }?.let(LocalDate::ofEpochDay)
 
+    private fun LocalTime.toMinutes(): Int = hour * 60 + minute
+
     private fun changed() {
         _gameVersion.value += 1
     }
@@ -280,7 +301,9 @@ class Store private constructor(private val prefs: SharedPreferences) {
 
         private const val KEY_WAIT_HOURS = "default_wait_hours"
         private const val KEY_CURRENCY = "currency"
-        private const val KEY_NUTS = "nuts"
+        // Stored under the v1 name so cashews collected so far are kept.
+        private const val KEY_CASHEWS = "nuts"
+        private const val KEY_DATA_VERSION = "data_version"
         private const val KEY_FIRST_DAY = "first_day"
         private const val KEY_LAST_BUY_ANYWAY = "last_buy_anyway_day"
         private const val KEY_HEARTS_MONTH = "hearts_month"

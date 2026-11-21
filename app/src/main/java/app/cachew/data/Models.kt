@@ -40,7 +40,8 @@ data class WaitItem(
 
 /** Counters the UI shows, computed for "now" (streak and hearts depend on the date). */
 data class GameSnapshot(
-    val nuts: Int,
+    /** Penny's winter stash; decides her level. */
+    val cashews: Int,
     val streak: Int,
     val heartsLeft: Int,
     val heartsRefill: java.time.LocalDate,
@@ -53,7 +54,10 @@ data class GameSnapshot(
 data class WinInfo(
     val amount: Double?,
     val currency: String,
-    val stash: Double,
+    /** Cashews this "Let it go" added (+1 per dollar). */
+    val cashewsEarned: Int,
+    /** Cashews in Penny's stash after it. */
+    val stash: Int,
     val keptThisMonth: Double,
     val level: Game.Level,
     val levelledUp: Boolean,
@@ -63,7 +67,7 @@ data class WinInfo(
 
 /** What screen 17 needs after "Add to waiting list". */
 data class RewardInfo(
-    val nuts: Int,
+    val cashews: Int,
     val streak: Int,
     /** First pause of the day: the "Pause before one shop" quest is done. */
     val questDone: Boolean,

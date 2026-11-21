@@ -119,7 +119,7 @@ fun DenScreen(onEditShops: () -> Unit, onTurnOn: () -> Unit, onOpenItem: (String
 
             Row(horizontalArrangement = Arrangement.spacedBy(CachewSize.Gap)) {
                 StatCard(game.streak.toString(), stringResource(R.string.stat_streak), Modifier.weight(1f), R.drawable.ic_flame)
-                StatCard(game.nuts.toString(), stringResource(R.string.den_nuts), Modifier.weight(1f), R.drawable.ic_cashew)
+                StatCard(game.cashews.toString(), stringResource(R.string.den_cashews), Modifier.weight(1f), R.drawable.ic_cashew)
                 StatCard(game.heartsLeft.toString(), stringResource(R.string.stat_hearts_left), Modifier.weight(1f), R.drawable.ic_heart)
             }
             Spacer(Modifier.height(CachewSize.Gap))
