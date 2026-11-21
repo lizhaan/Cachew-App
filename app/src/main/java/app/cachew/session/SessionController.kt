@@ -11,6 +11,7 @@ import app.cachew.data.ShopApps
 import app.cachew.data.ShopLabels
 import app.cachew.data.ShopSession
 import app.cachew.data.Store
+import java.time.LocalTime
 
 /**
  * Runs the 10-minute shop session (design-v2/03, 04). Lives inside ShopWatchService.
@@ -66,7 +67,8 @@ class SessionController(private val service: AccessibilityService) {
         handler.removeCallbacks(tick)
         val s = store.session ?: return overlays.hideAll()
         val now = System.currentTimeMillis()
-        if (now >= s.endsAt) return finish(s)
+        // Time's up, or the night shield just started: the session ends and the shop closes.
+        if (now >= s.endsAt || store.nightShield.isNight(LocalTime.now())) return finish(s)
         handler.postDelayed(tick, 1_000L - now % 1_000L) // next whole second
 
         if (foreground != s.shopPackage) return overlays.hideAll()
@@ -126,7 +128,7 @@ class SessionController(private val service: AccessibilityService) {
         store.endSession()
         overlays.hideAll()
         if (foreground == s.shopPackage) {
-            if (s.mode == SessionMode.Buy) {
+            if (s.mode == SessionMode.Buy && !store.nightShield.isNight(LocalTime.now())) {
                 Toast.makeText(service, R.string.buy_session_over, Toast.LENGTH_LONG).show()
             }
             service.performGlobalAction(AccessibilityService.GLOBAL_ACTION_HOME)

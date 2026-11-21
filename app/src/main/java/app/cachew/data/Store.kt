@@ -156,14 +156,12 @@ class Store private constructor(private val prefs: SharedPreferences) {
             on = prefs.getBoolean(KEY_SHIELD_ON, true),
             from = LocalTime.ofSecondOfDay(prefs.getInt(KEY_SHIELD_FROM, Rules.DEFAULT_NIGHT_FROM.toMinutes()) * 60L),
             to = LocalTime.ofSecondOfDay(prefs.getInt(KEY_SHIELD_TO, Rules.DEFAULT_NIGHT_TO.toMinutes()) * 60L),
-            strict = prefs.getBoolean(KEY_SHIELD_STRICT, true),
         )
         set(value) {
             prefs.edit {
                 putBoolean(KEY_SHIELD_ON, value.on)
                 putInt(KEY_SHIELD_FROM, value.from.toMinutes())
                 putInt(KEY_SHIELD_TO, value.to.toMinutes())
-                putBoolean(KEY_SHIELD_STRICT, value.strict)
             }
             changed()
         }
@@ -409,7 +407,6 @@ class Store private constructor(private val prefs: SharedPreferences) {
         private const val KEY_SHIELD_ON = "shield_on"
         private const val KEY_SHIELD_FROM = "shield_from_min"
         private const val KEY_SHIELD_TO = "shield_to_min"
-        private const val KEY_SHIELD_STRICT = "shield_strict"
         private const val NO_DAY = Long.MIN_VALUE
 
         @Volatile private var instance: Store? = null

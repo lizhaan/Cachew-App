@@ -34,7 +34,6 @@ import app.cachew.ui.theme.CachewType
 /** Screen 14: mood (2×2 tiles) + "Was it on your list?". Continue needs both answers. */
 @Composable
 fun QuestionsScreen(
-    night: Boolean,
     mood: Mood?,
     onList: Boolean?,
     onMood: (Mood) -> Unit,
@@ -52,9 +51,6 @@ fun QuestionsScreen(
             Spacer(Modifier.height(20.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(stringResource(R.string.questions_label).uppercase(), style = CachewType.Label, color = CachewColors.PurpleText, modifier = Modifier.weight(1f))
-                if (night) {
-                    Text(stringResource(R.string.questions_night_shield), style = CachewType.Body.copy(fontSize = 14.sp), color = CachewColors.TextSecondary)
-                }
             }
             Row(verticalAlignment = Alignment.Bottom) {
                 Text(
@@ -88,7 +84,7 @@ fun QuestionsScreen(
 
             Spacer(Modifier.height(16.dp))
             Text(
-                stringResource(if (night) R.string.questions_on_list_night else R.string.questions_on_list),
+                stringResource(R.string.questions_on_list),
                 style = CachewType.H2,
                 color = CachewColors.Title,
             )

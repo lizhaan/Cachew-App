@@ -3,23 +3,31 @@ package app.cachew.data
 import java.time.LocalTime
 
 /**
- * Night shield settings (screen 10): the user's riskiest hours get a stricter pause.
+ * Night shield settings (screen 10): during these hours the picked shops are fully blocked
+ * (no pause, no questions, no hearts). Also the quiet hours for reminders.
  *
- *  - [on] = false: no "night" at all for the pause; reminders still stay out of 22:00–09:00.
- *  - [strict]: at night there is no "Buy it anyway" on screen 15 (only wait or use a heart).
- *    Soft keeps the daytime choices at night too.
+ *  - [on] = false: shops are never blocked; reminders still stay out of 22:00–09:00.
+ *  - The 2-hour rule: from 2 hours before [from] until [to], the schedule can't be changed and the
+ *    shield can't be turned off. Making the window longer (or turning the shield on) is always fine.
  */
 data class NightShield(
     val on: Boolean = true,
-    val from: LocalTime = Game.DEFAULT_NIGHT_FROM,
-    val to: LocalTime = Game.DEFAULT_NIGHT_TO,
-    val strict: Boolean = true,
+    val from: LocalTime = Rules.DEFAULT_NIGHT_FROM,
+    val to: LocalTime = Rules.DEFAULT_NIGHT_TO,
 ) {
     /** Is [time] inside the shield's window (and the shield on)? */
     fun isNight(time: LocalTime): Boolean = on && Game.isNight(time, from, to)
 
-    /** Night and Strict: hide "Buy it anyway". */
-    fun blocksBuyAnyway(night: Boolean): Boolean = night && strict
+    /** Is the schedule locked right now (from − 2 h … to)? */
+    fun isLocked(time: LocalTime): Boolean =
+        on && Game.isNight(time, from.minusHours(Rules.SHIELD_LOCK_HOURS.toLong()), to)
+
+    /**
+     * May the user save [next] at [time]? Outside the lock, anything goes. While locked, only
+     * changes that keep the shield on and cover every minute of the current window (= longer).
+     */
+    fun allows(next: NightShield, time: LocalTime): Boolean =
+        !isLocked(time) || (next.on && covers(next, this))
 
     /** Hours when reminders wait for the morning. */
     val quietFrom: LocalTime get() = if (on) from else QUIET_FROM_WHEN_OFF
@@ -31,5 +39,12 @@ data class NightShield(
 
         /** A window needs two different times ("from 23:00 to 23:00" means nothing). */
         fun isValid(from: LocalTime, to: LocalTime): Boolean = from != to
+
+        /** Does [outer]'s window contain every minute of [inner]'s? (Windows may cross midnight.) */
+        fun covers(outer: NightShield, inner: NightShield): Boolean =
+            (0 until 24 * 60).all { m ->
+                val t = LocalTime.of(m / 60, m % 60)
+                !Game.isNight(t, inner.from, inner.to) || Game.isNight(t, outer.from, outer.to)
+            }
     }
 }

@@ -21,6 +21,7 @@ import app.cachew.data.PauseRecord
 import app.cachew.data.SessionMode
 import app.cachew.data.Store
 import app.cachew.data.WaitItem
+import java.time.LocalTime
 import app.cachew.ui.theme.CachewTheme
 
 /**
@@ -43,6 +44,8 @@ class PauseActivity : ComponentActivity() {
     private var buying by mutableStateOf(false)
     /** Shop name for items shared from a website (no app package). */
     private var shopNameHint by mutableStateOf<String?>(null)
+    /** Night shield hours: the shop is blocked until this time (null = not blocked). */
+    private var blockedUntil by mutableStateOf<LocalTime?>(null)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -54,7 +57,7 @@ class PauseActivity : ComponentActivity() {
         // Back must not drop the user into the shop: send them to the phone's home screen.
         // It still counts as a pause in the log (for Stats), with no answers.
         onBackPressedDispatcher.addCallback(this) {
-            if (!demo && !buying) Store.get(this@PauseActivity).logPause(PauseRecord(openedAt, shopPackage, null, null, EntryAction.Left))
+            if (!demo && !buying && blockedUntil == null) Store.get(this@PauseActivity).logPause(PauseRecord(openedAt, shopPackage, null, null, EntryAction.Left))
             goHome()
         }
 
@@ -67,9 +70,11 @@ class PauseActivity : ComponentActivity() {
                         openedAt = openedAt,
                         buying = buying,
                         shopNameHint = shopNameHint,
+                        blockedUntil = blockedUntil,
                         onStartSession = ::startSession,
                         onClose = ::closeShop,
                         onBuy = ::continueToBuy,
+                        onBlockClose = ::goHome,
                     )
                 }
             }
@@ -98,6 +103,9 @@ class PauseActivity : ComponentActivity() {
         buying = intent.getBooleanExtra(EXTRA_BUY, false)
         buyUrl = intent.getStringExtra(EXTRA_URL)
         shopNameHint = intent.getStringExtra(EXTRA_SHOP_NAME)
+        // Decided when the shop was opened: inside the night shield's hours it's a full block.
+        val shield = Store.get(this).nightShield
+        blockedUntil = shield.to.takeIf { shield.isNight(LocalTime.now()) }
         showingFor = shopPackage
     }
 

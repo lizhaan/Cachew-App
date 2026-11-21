@@ -60,8 +60,6 @@ import app.cachew.ui.theme.CachewColors
 import app.cachew.ui.theme.CachewSize
 import app.cachew.ui.theme.CachewType
 import app.cachew.ui.theme.Inter
-import java.time.Instant
-import java.time.ZoneId
 import java.util.Date
 import kotlin.math.ceil
 
@@ -86,9 +84,12 @@ fun PauseFlow(
     /** "Buy it" from the waiting list: just the countdown, then [onBuy] (no questions). */
     buying: Boolean,
     shopNameHint: String?,
+    /** Night shield hours: show the block screen instead of anything else. */
+    blockedUntil: java.time.LocalTime?,
     onStartSession: (PauseRecord, SessionMode) -> Unit,
     onClose: (PauseRecord) -> Unit,
     onBuy: () -> Unit,
+    onBlockClose: () -> Unit,
 ) {
     val context = LocalContext.current
     val store = remember { Store.get(context) }
@@ -96,12 +97,6 @@ fun PauseFlow(
         if (shopPackage.isNotEmpty()) value = ShopLabels.load(context, shopPackage)
     }
     val shopName = label?.name ?: shopNameHint ?: ShopLabels.quickName(shopPackage)
-
-    // Night is decided once, when the shop was opened, by the night shield's schedule.
-    // (Stage 5 replaces the night pause with a full block.)
-    val night = remember(openedAt) {
-        store.nightShield.isNight(Instant.ofEpochMilli(openedAt).atZone(ZoneId.systemDefault()).toLocalTime())
-    }
 
     var step by rememberSaveable { mutableStateOf(Step.Countdown) }
     var mood by rememberSaveable { mutableStateOf<Mood?>(null) }
@@ -113,7 +108,9 @@ fun PauseFlow(
 
     // Pause, questions and choice always use the night background, to stand apart from the shop.
     CachewBackground(night = true) {
-        if (buying) {
+        if (blockedUntil != null) {
+            NightBlockScreen(shopName = shopName, opensAt = blockedUntil, onClose = onBlockClose)
+        } else if (buying) {
             PauseCountdown(
                 label = label, shopName = shopName, openedAt = openedAt,
                 body = stringResource(R.string.pause_body_buy),
@@ -123,12 +120,12 @@ fun PauseFlow(
         } else when (step) {
             Step.Countdown -> PauseCountdown(
                 label = label, shopName = shopName, openedAt = openedAt,
-                body = stringResource(if (night) R.string.pause_body_night else R.string.pause_body_day),
+                body = stringResource(R.string.pause_body_day),
                 button = stringResource(R.string.pause_answer),
                 onAnswer = { step = Step.Questions },
             )
             Step.Questions -> QuestionsScreen(
-                night = night, mood = mood, onList = onList,
+                mood = mood, onList = onList,
                 onMood = { mood = it }, onOnList = { onList = it },
                 onContinue = { step = Step.Decision },
             )

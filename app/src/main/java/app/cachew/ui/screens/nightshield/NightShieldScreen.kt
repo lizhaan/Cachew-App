@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -47,8 +48,6 @@ import app.cachew.data.NightShield
 import app.cachew.data.Store
 import app.cachew.reminders.Reminders
 import app.cachew.ui.components.CachewBackground
-import app.cachew.ui.components.ChoiceLabel
-import app.cachew.ui.components.ChoiceTile
 import app.cachew.ui.components.GlassCard
 import app.cachew.ui.components.OnboardingProgress
 import app.cachew.ui.components.Penny
@@ -64,7 +63,9 @@ import java.time.format.DateTimeFormatter
 private val HHMM = DateTimeFormatter.ofPattern("HH:mm")
 
 /**
- * Screen 10: when the night shield runs (from → to, 24 h pickers), on/off, Soft or Strict.
+ * Screen 10: when the night shield runs (from → to, 24 h pickers) and on/off.
+ * From 2 hours before the start until the morning the schedule is locked: it can only get longer,
+ * and the shield can't be turned off ("Locked until 07:00").
  * Nothing is saved until "Save"; then all waiting reminders are re-planned for the new quiet hours.
  */
 @Composable
@@ -77,12 +78,15 @@ fun NightShieldScreen(onboarding: Boolean, onSaved: () -> Unit) {
     var fromMin by rememberSaveable { mutableStateOf(initial.from.hour * 60 + initial.from.minute) }
     var toMin by rememberSaveable { mutableStateOf(initial.to.hour * 60 + initial.to.minute) }
     var on by rememberSaveable { mutableStateOf(initial.on) }
-    var strict by rememberSaveable { mutableStateOf(initial.strict) }
+    // The first setup in onboarding is never locked: nothing was promised yet.
+    val locked = remember { !onboarding && initial.isLocked(LocalTime.now()) }
     var picking by rememberSaveable { mutableStateOf<String?>(null) } // "from" / "to" / null
 
     val from = LocalTime.of(fromMin / 60, fromMin % 60)
     val to = LocalTime.of(toMin / 60, toMin % 60)
+    val next = NightShield(on = on, from = from, to = to)
     val valid = NightShield.isValid(from, to)
+    val allowed = !locked || initial.allows(next, LocalTime.now())
 
     CachewBackground {
         Column(
@@ -120,11 +124,14 @@ fun NightShieldScreen(onboarding: Boolean, onSaved: () -> Unit) {
                 }
                 Spacer(Modifier.height(CachewSize.Gap))
 
-                GlassCard(Modifier.fillMaxWidth(), onClick = { on = !on }) {
+                // While locked the shield can't be switched off (turning it on is always fine).
+                val canToggle = !(locked && on)
+                GlassCard(Modifier.fillMaxWidth().alpha(if (canToggle) 1f else 0.55f), onClick = if (canToggle) ({ on = !on }) else null) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(stringResource(R.string.shield_on), style = CachewType.Body.copy(fontWeight = FontWeight.Bold, fontSize = 18.sp), color = CachewColors.Title, modifier = Modifier.weight(1f))
                         Switch(
                             checked = on,
+                            enabled = canToggle,
                             onCheckedChange = { on = it },
                             colors = SwitchDefaults.colors(
                                 checkedTrackColor = CachewColors.Purple,
@@ -137,28 +144,30 @@ fun NightShieldScreen(onboarding: Boolean, onSaved: () -> Unit) {
                 }
                 Spacer(Modifier.height(CachewSize.Gap))
 
-                // Modes only matter while the shield is on.
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.alpha(if (on) 1f else 0.4f)) {
-                    ChoiceTile(selected = !strict, onClick = { strict = false }, modifier = Modifier.weight(1f)) {
-                        ChoiceLabel(stringResource(R.string.shield_soft))
+                if (locked) {
+                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(horizontal = 6.dp)) {
+                        Text("🔒", fontSize = 16.sp)
+                        Spacer(Modifier.width(8.dp))
+                        Text(
+                            stringResource(R.string.shield_locked, initial.to.format(HHMM)),
+                            style = CachewType.Body.copy(fontWeight = FontWeight.Bold),
+                            color = CachewColors.PurpleText,
+                        )
                     }
-                    ChoiceTile(selected = strict, onClick = { strict = true }, modifier = Modifier.weight(1f)) {
-                        ChoiceLabel(stringResource(R.string.shield_strict))
-                    }
+                    Text(stringResource(R.string.shield_locked_hint), style = CachewType.Body, color = CachewColors.TextSecondary, modifier = Modifier.padding(horizontal = 6.dp))
+                    Spacer(Modifier.height(12.dp))
                 }
-                Spacer(Modifier.height(12.dp))
                 Text(
-                    stringResource(
-                        when {
-                            !on -> R.string.shield_off_caption
-                            strict -> R.string.shield_strict_caption
-                            else -> R.string.shield_soft_caption
-                        }
-                    ),
+                    if (on) stringResource(R.string.shield_on_caption, from.format(HHMM), to.format(HHMM))
+                    else stringResource(R.string.shield_off_caption),
                     style = CachewType.Body,
                     color = CachewColors.TextSecondary,
                     modifier = Modifier.padding(horizontal = 6.dp),
                 )
+                if (valid && !allowed) {
+                    Spacer(Modifier.height(8.dp))
+                    Text(stringResource(R.string.shield_only_longer), style = CachewType.Body.copy(fontWeight = FontWeight.SemiBold), color = CachewColors.Heart, modifier = Modifier.padding(horizontal = 6.dp))
+                }
                 if (!valid) {
                     Spacer(Modifier.height(8.dp))
                     Text(stringResource(R.string.shield_same_time), style = CachewType.Body.copy(fontWeight = FontWeight.SemiBold), color = CachewColors.Heart, modifier = Modifier.padding(horizontal = 6.dp))
@@ -168,9 +177,9 @@ fun NightShieldScreen(onboarding: Boolean, onSaved: () -> Unit) {
 
             PrimaryButton(
                 text = stringResource(R.string.shield_save),
-                enabled = valid,
+                enabled = valid && allowed,
                 onClick = {
-                    store.nightShield = NightShield(on = on, from = from, to = to, strict = strict)
+                    store.nightShield = next
                     Reminders.rescheduleAll(context) // quiet hours may have moved
                     onSaved()
                 },

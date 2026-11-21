@@ -53,23 +53,25 @@
     <string name="pause_pill">%1$s · opened at %2$s</string>
     <string name="pause_title">Pause. Breathe.</string>
     <string name="pause_body_day">You\'re in a shop. Penny\'s got a couple of questions.</string>
-    <string name="pause_body_night">It\'s late and you\'re in a shop. Penny\'s got a couple of questions.</string>
     <string name="pause_answer">Answer Penny</string>
 
     <string name="pause_back_to_den">Back to the den</string>
+
+    <!-- Night shield block -->
+    <string name="block_title">%1$s opens at %2$s</string>
+    <string name="block_body">Penny\'s asleep. So is the sale.</string>
+    <string name="block_close">Close</string>
     <string name="pause_continue_to">Continue to %1$s</string>
     <string name="pause_body_buy">You waited for this one. One breath, then go get it.</string>
 
     <!-- 14 Questions -->
     <string name="questions_label">Pause · 2 questions</string>
-    <string name="questions_night_shield">night shield</string>
     <string name="questions_title">How are you feeling right now?</string>
     <string name="mood_tired">Tired</string>
     <string name="mood_bored">Bored</string>
     <string name="mood_stressed">Stressed</string>
     <string name="mood_fine">Fine</string>
     <string name="questions_on_list">Was it on your list?</string>
-    <string name="questions_on_list_night">Was it on your list before tonight?</string>
     <string name="yes">Yes</string>
     <string name="no">No</string>
     <string name="questions_continue">Continue</string>
@@ -134,20 +136,19 @@
 
     <!-- 10 Night shield -->
     <string name="shield_title">Night shield</string>
-    <string name="shield_subtitle">Your riskiest hours get a stricter pause.</string>
+    <string name="shield_subtitle">Your riskiest hours. The shops you picked stay closed.</string>
     <string name="shield_from">from</string>
     <string name="shield_to">to</string>
     <string name="shield_on">Night shield on</string>
-    <string name="shield_soft">Soft · daytime</string>
-    <string name="shield_strict">Strict · at night</string>
-    <string name="shield_strict_caption">Strict means no “buy anyway” at night. Only wait or use a heart.</string>
-    <string name="shield_soft_caption">Soft keeps every choice at night, with the night-time pause.</string>
-    <string name="shield_off_caption">Shield off: pauses look the same all day. Reminders still wait until 9:00.</string>
+    <string name="shield_off_caption">Shield off: shops open at night too. Reminders still wait until 9:00.</string>
+    <string name="shield_on_caption">From %1$s to %2$s the shops you picked don\'t open. Reminders wait for the morning.</string>
+    <string name="shield_locked">Locked until %1$s</string>
+    <string name="shield_locked_hint">The shield starts soon, so tonight can only get longer.</string>
+    <string name="shield_only_longer">Right now you can only make the night longer.</string>
     <string name="shield_same_time">“From” and “to” can\'t be the same time.</string>
     <string name="shield_save">Save</string>
     <string name="shield_pick_from">Night starts at</string>
     <string name="shield_pick_to">Night ends at</string>
-    <string name="decision_no_buy_until">no “buy anyway” until %1$s</string>
     <string name="den_shield_off">off</string>
 
     <!-- 16 Share -->

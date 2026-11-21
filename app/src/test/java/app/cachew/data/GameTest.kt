@@ -123,13 +123,30 @@ class GameTest {
         assertEquals(LocalDateTime.of(2026, 11, 13, 9, 0) to true, Game.reminderTime(due, off.quietFrom, off.quietTo))
     }
 
-    @Test fun shield_customWindowAndStrict() {
-        val shield = NightShield(from = LocalTime.of(21, 0), to = LocalTime.of(6, 30), strict = true)
+    @Test fun shield_customWindow() {
+        val shield = NightShield(from = LocalTime.of(21, 0), to = LocalTime.of(6, 30))
         assertTrue(shield.isNight(LocalTime.of(21, 15)))
         assertFalse(shield.isNight(LocalTime.of(6, 30)))
-        assertTrue(shield.blocksBuyAnyway(night = true))
-        assertFalse(shield.blocksBuyAnyway(night = false))
-        assertFalse(shield.copy(strict = false).blocksBuyAnyway(night = true))
+    }
+
+    @Test fun shield_lockedFromTwoHoursBeforeUntilMorning() {
+        val shield = NightShield() // 23:00 → 07:00, locked 21:00 → 07:00
+        assertFalse(shield.isLocked(LocalTime.of(20, 59)))
+        assertTrue(shield.isLocked(LocalTime.of(21, 0)))
+        assertTrue(shield.isLocked(LocalTime.of(3, 0)))
+        assertFalse(shield.isLocked(LocalTime.of(7, 0)))
+        assertFalse(shield.copy(on = false).isLocked(LocalTime.of(23, 30)))
+    }
+
+    @Test fun shield_whileLocked_onlyLongerWindowsAllowed() {
+        val now = LocalTime.of(22, 0)
+        val shield = NightShield()
+        assertFalse(shield.allows(shield.copy(on = false), now))                              // can't turn off
+        assertFalse(shield.allows(shield.copy(from = LocalTime.of(0, 0)), now))               // shorter
+        assertTrue(shield.allows(shield.copy(from = LocalTime.of(22, 0)), now))               // starts earlier
+        assertTrue(shield.allows(shield.copy(to = LocalTime.of(8, 0)), now))                  // ends later
+        assertTrue(shield.allows(shield.copy(on = false), LocalTime.of(15, 0)))               // daytime: anything
+        assertTrue(NightShield(on = false).allows(NightShield(on = true), LocalTime.of(23, 30))) // turning on: always
     }
 
     @Test fun shield_sameFromAndToIsInvalid() {
