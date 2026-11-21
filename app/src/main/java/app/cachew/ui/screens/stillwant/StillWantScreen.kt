@@ -197,7 +197,7 @@ private fun AskScreen(
             onClick = onLetGo,
         )
         Spacer(Modifier.height(CachewSize.Gap))
-        SecondaryButton(stringResource(R.string.still_buy_waited), onBuy)
+        SecondaryButton(stringResource(R.string.still_buy_waited), onBuy, centered = true)
         TextAction(stringResource(R.string.still_already_bought), onAlreadyBought)
     }
 }

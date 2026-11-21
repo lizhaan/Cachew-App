@@ -14,6 +14,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import app.cachew.ui.theme.CachewColors
@@ -31,6 +32,8 @@ fun SecondaryButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
+    /** Centred label, for a button that sits under a centred PrimaryButton ("Buy it, I waited"). */
+    centered: Boolean = false,
     trailing: (@Composable RowScope.() -> Unit)? = null,
 ) {
     GlassCard(
@@ -47,6 +50,7 @@ fun SecondaryButton(
                 text = text,
                 style = CachewType.Body.copy(fontWeight = FontWeight.Bold, fontSize = 17.sp),
                 color = CachewColors.Title,
+                textAlign = if (centered) TextAlign.Center else TextAlign.Start,
                 modifier = Modifier.weight(1f),
             )
             if (trailing != null) {
