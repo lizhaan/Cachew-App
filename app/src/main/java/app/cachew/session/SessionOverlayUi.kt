@@ -41,6 +41,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import app.cachew.R
@@ -105,7 +106,8 @@ internal fun PennyCircle(state: SessionUiState, onTap: () -> Unit) {
         }
     }
     Row(
-        Modifier.padding(end = 8.dp).offset(y = jump.value.dp),
+        // Lambda offset: the bounce only moves the drawing, without re-measuring every frame.
+        Modifier.padding(end = 8.dp).offset { IntOffset(0, jump.value.dp.roundToPx()) },
         verticalAlignment = Alignment.CenterVertically,
     ) {
         AnimatedVisibility(visible = state.bubble != null, enter = fadeIn(), exit = fadeOut()) {

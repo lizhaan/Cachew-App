@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources>
+<resources xmlns:tools="http://schemas.android.com/tools">
     <!-- Cachew is always dark. The window background matches the day gradient,
          so there is no white flash before Compose draws the first frame. -->
     <style name="Theme.Cachew" parent="android:Theme.Material.NoActionBar">
@@ -7,6 +7,8 @@
         <item name="android:statusBarColor">@android:color/transparent</item>
         <item name="android:navigationBarColor">@android:color/transparent</item>
         <item name="android:windowLightStatusBar">false</item>
+        <!-- Already dark: the system's (and MIUI's) dark mode must not repaint it. -->
+        <item name="android:forceDarkAllowed" tools:targetApi="q">false</item>
     </style>
 
     <!-- Pause screens: same, but with the night background colour. -->
