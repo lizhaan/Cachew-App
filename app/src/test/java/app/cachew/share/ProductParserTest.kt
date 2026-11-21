@@ -52,6 +52,27 @@ class ProductParserTest {
         assertEquals("Chunky knit sweater", info.title)
         assertEquals(64.0, info.price!!, 0.001)
         assertEquals("https://shop.example/img/sweater.jpg", info.imageUrl)
+        assertEquals("USD", info.currency)
+    }
+
+    @Test fun temuStylePage() {
+        // Trimmed from a real Temu Ukraine product page (no JSON-LD; price in the page's script data).
+        val html = """
+            <html><head><title>  сумка   led нічник з сенсорним датчиком - Temu Ukraine</title>
+            <meta property="og:title" content="  сумка   led нічник з сенсорним датчиком - Temu Ukraine">
+            <meta property="og:image" content="https://img-eu.kwcdn.com/goods-detail-img/x.png">
+            <script>window.rawData={"goods":{"minOnSalePrice":14462,"minOnSalePriceStr":"144.62₴"},"currencyCode":"UAH"}</script>
+            </head><body></body></html>
+        """.trimIndent()
+        val info = ProductParser.parse(Jsoup.parse(html, "https://www.temu.com/goods.html?goods_id=1"))
+        assertEquals("сумка led нічник з сенсорним датчиком", info.title)
+        assertEquals(144.62, info.price!!, 0.001)
+        assertEquals("UAH", info.currency)
+        assertEquals("https://img-eu.kwcdn.com/goods-detail-img/x.png", info.imageUrl)
+    }
+
+    @Test fun titleKeepsDashThatIsNotTheShopName() {
+        assertEquals("T-shirt - blue", ProductParser.cleanTitle("T-shirt - blue", "https://www.zara.com/p/1"))
     }
 
     @Test fun openGraphFallback() {
@@ -72,7 +93,8 @@ class ProductParserTest {
         val html = """<html><head><title>Mug | Shop</title></head>
             <body><span itemprop="price" content="1 299">1 299 грн</span></body></html>"""
         val info = ProductParser.parse(Jsoup.parse(html, "https://shop.example/p/3"))
-        assertEquals("Mug | Shop", info.title)
+        // " | Shop" names the website (shop.example), so it's dropped.
+        assertEquals("Mug", info.title)
         assertEquals(1299.0, info.price!!, 0.001)
         assertNull(info.imageUrl)
     }

@@ -14,6 +14,8 @@ data class ProductInfo(
     val title: String? = null,
     val price: Double? = null,
     val imageUrl: String? = null,
+    /** ISO code of [price] ("USD", "UAH"), when the page says. */
+    val currency: String? = null,
 )
 
 /**
@@ -24,7 +26,8 @@ data class ProductInfo(
  *  1. JSON-LD "Product" (structured data most shops publish for Google)
  *  2. Open Graph meta tags: og:title, og:image, product:price:amount
  *  3. itemprop="price" and the page <title>
- *  4. a price written in the shared text itself ("$64", "1 299 грн", "€12,50")
+ *  4. a formatted price in the page's own data, e.g. Temu's "minOnSalePriceStr":"144.62₴"
+ *  5. a price written in the shared text itself ("$64", "1 299 грн", "€12,50")
  */
 object ProductParser {
 
@@ -33,6 +36,18 @@ object ProductParser {
     /** The first link in the shared text, without trailing punctuation. */
     fun extractUrl(text: String): String? =
         urlRegex.find(text)?.value?.trimEnd('.', ',', ')', ']', '!', '?', ';')
+
+    /** A photo passed inside the link itself, e.g. Temu's "...goods.html?thumb_url=https%3A%2F%2Fimg..." */
+    fun imageFromLink(url: String): String? {
+        val query = runCatching { URI(url).rawQuery }.getOrNull() ?: return null
+        return query.split('&').firstNotNullOfOrNull { part ->
+            val (key, value) = part.split('=', limit = 2).takeIf { it.size == 2 } ?: return@firstNotNullOfOrNull null
+            if (key in IMAGE_PARAMS) java.net.URLDecoder.decode(value, "UTF-8").takeIf { it.startsWith("http") } else null
+        }
+    }
+
+    // Not Temu's "share_img": that's a promo card, not the product photo.
+    private val IMAGE_PARAMS = setOf("thumb_url", "image", "img")
 
     /** Shared text minus the link: many shops put the product name there. */
     fun titleFromShareText(text: String): String? {
@@ -46,18 +61,59 @@ object ProductParser {
             title = meta(doc, "og:title"),
             price = (meta(doc, "product:price:amount") ?: meta(doc, "og:price:amount"))?.let(::parseNumber),
             imageUrl = doc.selectFirst("meta[property=og:image], meta[name=og:image]")?.absUrl("content")?.ifBlank { null },
+            currency = meta(doc, "product:price:currency") ?: meta(doc, "og:price:currency"),
         )
         val basic = ProductInfo(
             title = doc.title().ifBlank { null },
             price = doc.selectFirst("[itemprop=price]")?.let { el ->
                 (el.attr("content").ifBlank { el.text() }).let(::parseNumber)
             },
+            currency = doc.selectFirst("[itemprop=priceCurrency]")?.let { it.attr("content").ifBlank { it.text() } }?.ifBlank { null },
         )
+        // Pick the price together with the currency of the same source.
+        val priced = listOf(ld, og, basic).firstOrNull { it.price != null } ?: fromEmbeddedData(doc.html())
         return ProductInfo(
-            title = (ld.title ?: og.title ?: basic.title)?.trim(),
-            price = ld.price ?: og.price ?: basic.price,
+            title = (ld.title ?: og.title ?: basic.title)?.let { cleanTitle(it, doc.location()) },
+            price = priced.price,
             imageUrl = (ld.imageUrl ?: og.imageUrl)?.let { resolve(doc.location(), it) },
+            currency = priced.currency?.uppercase(),
         )
+    }
+
+    // ---- Price hidden in the page's script data (shops that render with JavaScript) ----
+
+    private val embeddedPrice = Regex(""""(?:minOnSalePriceStr|salePriceStr|normalPriceStr|priceStr|formattedPrice)"\s*:\s*"([^"]{1,30})"""")
+    private val embeddedCurrency = Regex(""""(?:currencyCode|priceCurrency|currency)"\s*:\s*"([A-Z]{3})"""")
+
+    /** Temu-style pages: "minOnSalePriceStr":"144.62₴" and "currencyCode":"UAH" inside a script. */
+    fun fromEmbeddedData(html: String): ProductInfo {
+        val text = embeddedPrice.find(html)?.groupValues?.get(1) ?: return ProductInfo()
+        val price = priceFromText(text) ?: parseNumber(text.filter { it.isDigit() || it == '.' || it == ',' })
+        return ProductInfo(price = price, currency = embeddedCurrency.find(html)?.groupValues?.get(1) ?: currencyFromSymbol(text))
+    }
+
+    private fun currencyFromSymbol(text: String): String? = when {
+        '$' in text -> "USD"
+        '€' in text -> "EUR"
+        '₴' in text || "грн" in text -> "UAH"
+        else -> null
+    }
+
+    // ---- Title ---------------------------------------------------------------------------
+
+    /**
+     * "  сумка   led нічник - Temu Ukraine" → "сумка led нічник".
+     * Squeezes spaces and drops a " - Shop name" / " | Shop name" tail when it names the website.
+     */
+    fun cleanTitle(raw: String, pageUrl: String): String {
+        var t = raw.replace(Regex("""\s+"""), " ").trim()
+        val brand = runCatching { URI(pageUrl).host }.getOrNull()
+            ?.removePrefix("www.")?.split('.')?.firstOrNull { it.length > 2 && it != "com" }
+        val tail = Regex("""\s+[-|–—:]\s+([^-|–—]+)$""").find(t)
+        if (brand != null && tail != null && tail.groupValues[1].contains(brand, ignoreCase = true)) {
+            t = t.substring(0, tail.range.first).trim()
+        }
+        return t
     }
 
     // ---- JSON-LD ------------------------------------------------------------------------
@@ -70,6 +126,7 @@ object ProductParser {
                 title = product.str("name"),
                 price = priceFromOffers(product["offers"]),
                 imageUrl = imageFrom(product["image"]),
+                currency = currencyFromOffers(product["offers"]),
             )
         }
         return ProductInfo()
@@ -96,6 +153,12 @@ object ProductParser {
         is JsonArray -> offers.firstNotNullOfOrNull { priceFromOffers(it) }
         is JsonObject -> (offers.str("price") ?: offers.str("lowPrice"))?.let(::parseNumber)
             ?: priceFromOffers(offers["priceSpecification"])
+        else -> null
+    }
+
+    private fun currencyFromOffers(offers: JsonElement?): String? = when (offers) {
+        is JsonArray -> offers.firstNotNullOfOrNull { currencyFromOffers(it) }
+        is JsonObject -> offers.str("priceCurrency") ?: currencyFromOffers(offers["priceSpecification"])
         else -> null
     }
 

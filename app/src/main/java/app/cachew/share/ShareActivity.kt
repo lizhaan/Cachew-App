@@ -3,6 +3,8 @@ package app.cachew.share
 import android.content.Intent
 import android.graphics.Color
 import android.os.Bundle
+import android.util.Log
+import app.cachew.BuildConfig
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
@@ -39,6 +41,11 @@ class ShareActivity : ComponentActivity() {
         val url = ProductParser.extractUrl(text)
         // Which app shared it, if Android tells us (e.g. android-app://com.zzkko).
         val fromPackage = referrer?.takeIf { it.scheme == "android-app" }?.host?.takeIf { it != packageName }
+        if (BuildConfig.DEBUG) {
+            // Debug builds only: what the shop actually sent, to tune the parser per shop.
+            val extras = intent.extras?.keySet()?.joinToString { k -> "$k=${intent.extras?.get(k)}" }
+            Log.d(ProductFetcher.TAG, "share from=$fromPackage referrer=$referrer type=${intent.type} url=$url extras=[$extras]")
+        }
         // Survives rotation/recreation, so the photo file name stays the same.
         val itemId = savedInstanceState?.getString(KEY_ID) ?: UUID.randomUUID().toString()
         intent.putExtra(KEY_ID, itemId)

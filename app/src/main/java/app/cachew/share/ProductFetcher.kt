@@ -1,9 +1,13 @@
 package app.cachew.share
 
+import android.util.Log
+import app.cachew.BuildConfig
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import org.jsoup.Connection
 import org.jsoup.Jsoup
 import java.io.File
+import java.net.URL
 
 /** Network side of Share: download the product page and its photo. Never throws. */
 object ProductFetcher {
@@ -18,14 +22,58 @@ object ProductFetcher {
     /** Page → product info, or null if the page can't be loaded in time. */
     suspend fun fetch(url: String): ProductInfo? = withContext(Dispatchers.IO) {
         runCatching {
-            val doc = Jsoup.connect(url)
-                .userAgent(MOBILE_UA)
-                .timeout(TIMEOUT_MS)
-                .followRedirects(true)
-                .get()
-            ProductParser.parse(doc)
-        }.getOrNull()
+            val res = openFollowingRedirects(url)
+            val doc = res.parse()
+            // Some share links carry the product photo in the link itself (Temu: ?thumb_url=...).
+            // It's the clean photo (Temu's og:image is a promo card), and it works even when the
+            // page hides its data from non-browsers, so it wins.
+            val info = ProductParser.parse(doc).let { p ->
+                p.copy(imageUrl = ProductParser.imageFromLink(res.url().toString()) ?: p.imageUrl)
+            }
+            if (BuildConfig.DEBUG) {
+                Log.d(TAG, "fetch status=${res.statusCode()} final=${res.url()} title='${doc.title()}' " +
+                    "ldjson=${doc.select("script[type=application/ld+json]").size} " +
+                    "og:title=${doc.selectFirst("meta[property=og:title]") != null} chars=${doc.html().length} -> $info")            }
+            // An error page ("Access denied", captcha) must not overwrite what the shared text gave us.
+            if (res.statusCode() in 200..299) info else ProductInfo(imageUrl = info.imageUrl)
+        }.onFailure { if (BuildConfig.DEBUG) Log.d(TAG, "fetch failed for $url", it) }.getOrNull()
     }
+
+    /**
+     * Follows redirects ourselves instead of letting jsoup do it, so that an "http://" hop
+     * becomes "https://". Short share links (share.temu.com) sometimes redirect to plain http,
+     * and Android blocks unencrypted traffic, which made the whole fetch fail.
+     */
+    private fun openFollowingRedirects(start: String): Connection.Response {
+        var url = toHttps(start)
+        // Cookies set along the way are sent on the next hop, like a browser does.
+        val cookies = mutableMapOf<String, String>()
+        repeat(MAX_REDIRECTS) {
+            val res = Jsoup.connect(url)
+                .userAgent(MOBILE_UA)
+                .header("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8")
+                .header("Accept-Language", "en-US,en;q=0.9")
+                .cookies(cookies)
+                .timeout(TIMEOUT_MS)
+                .followRedirects(false)
+                .ignoreHttpErrors(true)
+                .maxBodySize(MAX_PAGE_BYTES) // Temu's product page is ~0.7 MB
+                .execute()
+            cookies.putAll(res.cookies())
+            val location = res.header("Location")
+            if (res.statusCode() !in 300..399 || location.isNullOrBlank()) return res
+            url = toHttps(URL(URL(url), location).toString())
+        }
+        error("Too many redirects from $start")
+    }
+
+    private fun toHttps(url: String): String =
+        if (url.startsWith("http://", ignoreCase = true)) "https://" + url.substring(7) else url
+
+    private const val MAX_REDIRECTS = 6
+    private const val MAX_PAGE_BYTES = 5 * 1024 * 1024
+
+    const val TAG = "CachewShare"
 
     /** Saves the photo to [target]; returns false if it couldn't be downloaded. */
     suspend fun downloadImage(url: String, target: File): Boolean = withContext(Dispatchers.IO) {

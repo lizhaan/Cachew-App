@@ -83,10 +83,24 @@ fun ShareScreen(
     // Read the product page once. Failure is silent: whatever we had stays on screen.
     LaunchedEffect(url) {
         if (url == null || !loading) return@LaunchedEffect
-        val info = ProductFetcher.fetch(url)
-        if (info != null) {
+        var info = ProductFetcher.fetch(url)
+        // Nothing useful (bot check)? Try once more with a real browser engine.
+        if (info?.title == null) {
+            WebPageLoader.load(context, url)?.let { page ->
+                val fromBrowser = ProductParser.parse(org.jsoup.Jsoup.parse(page.html, page.url))
+                info = fromBrowser.copy(imageUrl = info?.imageUrl ?: fromBrowser.imageUrl)
+            }
+        }
+        val got = info
+        if (got != null) {
+            val info = got
             if (!nameEdited && info.title != null) name = info.title
-            if (!priceEdited && info.price != null) priceText = plain(info.price)
+            // Prices are kept in dollars. A price in another currency (Temu Ukraine shows ₴144.62)
+            // is converted at a fixed rate ($3.48); an unknown currency is left for the user to type.
+            val price = info.price?.let { p ->
+                if (info.currency == null || info.currency == store.currency) p else Money.toUsd(p, info.currency)
+            }
+            if (!priceEdited && price != null) priceText = plain(price)
         }
         loading = false
         val image = info?.imageUrl
@@ -149,6 +163,7 @@ fun ShareScreen(
                     addedAt = System.currentTimeMillis(),
                     waitMillis = waitMillisFor(hours),
                     thumbPath = thumbPath,
+                    url = url,
                 )
                 store.addSharedItem(item) // no nuts: those are for pauses
                 Reminders.schedule(context, item)

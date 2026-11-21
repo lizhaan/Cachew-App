@@ -67,6 +67,8 @@ data class WaitItem(
     val decidedAt: Long? = null,
     /** When the "time's up" notification was shown; null = still to come. */
     val remindedAt: Long? = null,
+    /** The product link from Share; "Buy it" opens it (stage 4). */
+    val url: String? = null,
 ) {
     @Serializable
     enum class Status { Waiting, Kept, BoughtWithHeart }

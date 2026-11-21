@@ -134,13 +134,16 @@ internal fun PennyCircle(state: SessionUiState, onTap: () -> Unit) {
                 .background(CachewColors.BgMid)
                 .border(3.dp, CachewColors.PurpleLight, CircleShape)
                 .clickable(onClick = onTap),
-            contentAlignment = Alignment.BottomCenter,
+            contentAlignment = Alignment.Center,
         ) {
+            // penny_peek.png is 4:3 (240×180). A 4:3 picture fits completely inside a circle when its
+            // diagonal equals the diameter: 68 dp circle → 54 × 40 dp. So the whole Penny is visible,
+            // ears and paws included.
             Image(
                 painterResource(PennyPose.Peek.res),
                 contentDescription = null,
-                contentScale = ContentScale.Crop,
-                modifier = Modifier.size(64.dp).offset(y = 6.dp),
+                contentScale = ContentScale.Fit,
+                modifier = Modifier.size(width = 54.dp, height = 40.dp),
             )
         }
     }

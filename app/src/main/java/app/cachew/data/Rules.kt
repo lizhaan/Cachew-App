@@ -60,6 +60,19 @@ object Rules {
     val WAIT_HOURS_OPTIONS: List<Int> = listOf(24, 48, 72)
     const val DEFAULT_WAIT_HOURS = 48
 
+    /**
+     * Fixed rates for prices found in other currencies (how many dollars one unit is worth).
+     * Approximate (November 2026); only used when a shop page shows a non-dollar price.
+     */
+    val USD_PER_UNIT: Map<String, Double> = mapOf(
+        "USD" to 1.0,
+        "UAH" to 1 / 41.5,
+        "EUR" to 1.08,
+        "GBP" to 1.27,
+        "PLN" to 0.25,
+        "CAD" to 0.72,
+    )
+
     /** No answer to "Still want it?" for this long → one more reminder, "Let it go?". */
     const val LET_GO_NUDGE_DAYS = 7
 

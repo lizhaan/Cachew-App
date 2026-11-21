@@ -164,6 +164,12 @@ class GameTest {
         assertEquals(null, Money.parse("0"))
     }
 
+    @Test fun money_convertsOtherCurrenciesToDollars() {
+        assertEquals(3.48, Money.toUsd(144.62, "UAH")!!, 0.001)
+        assertEquals(64.0, Money.toUsd(64.0, "usd")!!, 0.001)
+        assertEquals(null, Money.toUsd(10.0, "XYZ"))
+    }
+
     @Test fun money_dropsZeroCents() {
         assertEquals("$64", Money.format(64.0, "USD", java.util.Locale.US))
         assertEquals("$64.50", Money.format(64.5, "USD", java.util.Locale.US))
