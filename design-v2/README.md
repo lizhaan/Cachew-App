@@ -16,3 +16,14 @@
 
 Валюта всюди — «cashews». Слова «nuts» в інтерфейсі немає.
 Екранів паузи (10 с), квізу (2 питання), Night shield-блоку і вкладки Me на скрінах немає — будувати за SPEC.md у тому ж стилі.
+
+## onboarding/ (22.11.2026)
+
+Перший запуск: 01 Welcome → 02 факти → 03 About you (необов'язково, Skip) → 04–05 квіз (2 питання) → 06 результат → 07 Meet Penny → 08 How it works → 09 вибір магазинів → 10 дозвіл → 11 нічний щит → ціль → Den.
+
+Рішення щодо розбіжностей зі скрінами:
+- Нічний щит лишається повним блоком (етап 5). Рядки «pause is 30 seconds», «opens for 5 minutes», «Can't be switched off» з екрана 11 не робимо; замість них картка «What happens at night».
+- Тексти, що обіцяють те, чого застосунок не робить, переписано: немає «I already have an account», «tailor her questions», «New ones every time», «Skip it and she gets sleepy».
+- Квіз — 2 питання («Question 1 of 2»).
+- About you зберігається лише на телефоні.
+- quiz_after_pause.png — нове друге питання на паузі: «Something specific / Just scrolling». Підпис «Penny picks 2 of 120+ questions» не робимо.

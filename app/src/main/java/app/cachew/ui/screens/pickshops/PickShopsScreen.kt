@@ -71,9 +71,9 @@ fun PickShopsScreen(
     val selected by store.selectedPackages.collectAsStateWithLifecycle()
 
     // Night shield lock (from 2 h before the night until the morning): shops can be added, not
-    // removed, so the shield can't be dodged by unticking the shop. Not during onboarding.
+    // removed, so the shield can't be dodged by unticking the shop. Not before the shield's first setup.
     val shield = remember { store.nightShield }
-    val shopsLocked = remember { !onboarding && shield.isLocked(LocalTime.now()) }
+    val shopsLocked = remember { store.shieldConfirmed && shield.isLocked(LocalTime.now()) }
     val lockedUntil = shield.to.format(DateTimeFormatter.ofPattern("HH:mm"))
     val lockedMessage = stringResource(R.string.shops_locked, lockedUntil)
     fun tap(pkg: String) {

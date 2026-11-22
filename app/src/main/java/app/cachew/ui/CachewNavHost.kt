@@ -16,6 +16,13 @@ import app.cachew.ui.screens.apppicker.AppPickerScreen
 import app.cachew.ui.components.Tab
 import app.cachew.ui.components.TabScaffold
 import app.cachew.ui.screens.den.DenScreen
+import app.cachew.ui.screens.onboarding.AboutYouScreen
+import app.cachew.ui.screens.onboarding.FactsScreen
+import app.cachew.ui.screens.onboarding.HowItWorksScreen
+import app.cachew.ui.screens.onboarding.MeetPennyScreen
+import app.cachew.ui.screens.onboarding.QuizResultScreen
+import app.cachew.ui.screens.onboarding.QuizScreen
+import app.cachew.ui.screens.onboarding.WelcomeScreen
 import app.cachew.ui.screens.me.GoalScreen
 import app.cachew.ui.screens.me.MeScreen
 import app.cachew.ui.screens.stats.StatsScreen
@@ -26,6 +33,15 @@ import kotlinx.serialization.Serializable
 
 // Type-safe routes: navigation-compose turns these @Serializable classes into route strings.
 // [onboarding] = part of the first-run flow (08 → 09 → den); false = opened later from the den / Me.
+
+// First-run intro (design-v2/onboarding/ 01–08), then shops → permission → night shield → goal.
+@Serializable object WelcomeRoute
+@Serializable object FactsRoute
+@Serializable object AboutYouRoute
+@Serializable data class QuizRoute(val number: Int)
+@Serializable object QuizResultRoute
+@Serializable object MeetPennyRoute
+@Serializable object HowItWorksRoute
 
 /** Screen 08. */
 @Serializable data class PickShopsRoute(val onboarding: Boolean)
@@ -58,7 +74,7 @@ fun CachewNavHost(openItemId: String? = null, onItemOpened: () -> Unit = {}) {
     val context = LocalContext.current
     val store = remember { Store.get(context) }
     val nav = rememberNavController()
-    val start: Any = if (store.onboardingDone) DenRoute else PickShopsRoute(onboarding = true)
+    val start: Any = if (store.onboardingDone) DenRoute else WelcomeRoute
 
     // Opened from a reminder notification: go straight to "Still want it?".
     LaunchedEffect(openItemId) {
@@ -69,6 +85,16 @@ fun CachewNavHost(openItemId: String? = null, onItemOpened: () -> Unit = {}) {
     }
 
     NavHost(navController = nav, startDestination = start) {
+        composable<WelcomeRoute> { WelcomeScreen(onStart = { nav.navigate(FactsRoute) }) }
+        composable<FactsRoute> { FactsScreen(onNext = { nav.navigate(AboutYouRoute) }) }
+        composable<AboutYouRoute> { AboutYouScreen(onNext = { nav.navigate(QuizRoute(1)) }) }
+        composable<QuizRoute> { entry ->
+            val number = entry.toRoute<QuizRoute>().number
+            QuizScreen(number, onNext = { nav.navigate(if (number == 1) QuizRoute(2) else QuizResultRoute) })
+        }
+        composable<QuizResultRoute> { QuizResultScreen(onNext = { nav.navigate(MeetPennyRoute) }) }
+        composable<MeetPennyRoute> { MeetPennyScreen(onNext = { nav.navigate(HowItWorksRoute) }) }
+        composable<HowItWorksRoute> { HowItWorksScreen(onNext = { nav.navigate(PickShopsRoute(onboarding = true)) }) }
         composable<PickShopsRoute> { entry ->
             val route = entry.toRoute<PickShopsRoute>()
             PickShopsScreen(
@@ -148,6 +174,11 @@ fun CachewNavHost(openItemId: String? = null, onItemOpened: () -> Unit = {}) {
                     onShops = { nav.navigate(PickShopsRoute(onboarding = false)) },
                     onGoal = { nav.navigate(GoalRoute) },
                     onPermission = { nav.navigate(PermissionRoute(onboarding = false)) },
+                    onShowIntro = {
+                        // Replays the first-run flow (handy for demos); data stays as it is.
+                        store.onboardingDone = false
+                        nav.navigate(WelcomeRoute) { popUpTo(0) { inclusive = true } }
+                    },
                 )
             }
         }

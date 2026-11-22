@@ -49,6 +49,11 @@ class Store private constructor(private val prefs: SharedPreferences) {
             }
             version = 2
         }
+        if (version < 3) {
+            // Phones that finished onboarding before this flag existed have set their shield already.
+            if (prefs.getBoolean(KEY_ONBOARDING_DONE, false)) prefs.edit { putBoolean("shield_confirmed", true) }
+            version = 3
+        }
         prefs.edit {
             putInt(KEY_DATA_VERSION, version)
             remove(KEY_USD_MIGRATED)
@@ -73,6 +78,23 @@ class Store private constructor(private val prefs: SharedPreferences) {
     var onboardingDone: Boolean
         get() = prefs.getBoolean(KEY_ONBOARDING_DONE, false)
         set(value) = prefs.edit { putBoolean(KEY_ONBOARDING_DONE, value) }
+
+    /**
+     * True once the night shield was saved for the first time. Before that (first setup) its
+     * 2-hour lock doesn't apply; after it, not even replaying the intro can skip the lock.
+     */
+    var shieldConfirmed: Boolean
+        get() = prefs.getBoolean(KEY_SHIELD_CONFIRMED, false)
+        set(value) = prefs.edit { putBoolean(KEY_SHIELD_CONFIRMED, value) }
+
+    /**
+     * Onboarding answers ("About you" and the 2-question quiz), kept only on the phone.
+     * Keys like "age", "gender", "when", "spend"; values are the option ids.
+     */
+    var profile: Map<String, String>
+        get() = prefs.getString(KEY_PROFILE, null)
+            ?.let { runCatching { Json.decodeFromString<Map<String, String>>(it) }.getOrNull() } ?: emptyMap()
+        set(value) = prefs.edit { putString(KEY_PROFILE, Json.encodeToString(value)) }
 
     /** User said they turned on Xiaomi's "pop-up windows in background" (we can't check it ourselves). */
     var xiaomiPopupsDone: Boolean
@@ -428,6 +450,8 @@ class Store private constructor(private val prefs: SharedPreferences) {
         private const val KEY_SELECTED = "selected_packages"
         private const val KEY_ONBOARDING_DONE = "onboarding_done"
         private const val KEY_SESSION = "session"
+        private const val KEY_PROFILE = "onboarding_profile"
+        private const val KEY_SHIELD_CONFIRMED = "shield_confirmed"
         private const val KEY_GOAL = "goal"
         private const val KEY_GOALS_DONE = "goals_done"
         private const val KEY_BONUS_MONTH = "bonus_paid_month"

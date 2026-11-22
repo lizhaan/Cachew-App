@@ -78,8 +78,8 @@ fun NightShieldScreen(onboarding: Boolean, onSaved: () -> Unit) {
     var fromMin by rememberSaveable { mutableStateOf(initial.from.hour * 60 + initial.from.minute) }
     var toMin by rememberSaveable { mutableStateOf(initial.to.hour * 60 + initial.to.minute) }
     var on by rememberSaveable { mutableStateOf(initial.on) }
-    // The first setup in onboarding is never locked: nothing was promised yet.
-    val locked = remember { !onboarding && initial.isLocked(LocalTime.now()) }
+    // The very first setup is never locked: nothing was promised yet. (Replaying the intro later is.)
+    val locked = remember { store.shieldConfirmed && initial.isLocked(LocalTime.now()) }
     var picking by rememberSaveable { mutableStateOf<String?>(null) } // "from" / "to" / null
 
     val from = LocalTime.of(fromMin / 60, fromMin % 60)
@@ -144,6 +144,15 @@ fun NightShieldScreen(onboarding: Boolean, onSaved: () -> Unit) {
                 }
                 Spacer(Modifier.height(CachewSize.Gap))
 
+                // What the night means (onboarding screen 11, worded for the full block).
+                GlassCard(Modifier.fillMaxWidth()) {
+                    Text(stringResource(R.string.shield_what_title), style = CachewType.Body.copy(fontWeight = FontWeight.Bold, fontSize = 17.sp), color = CachewColors.Title)
+                    Spacer(Modifier.height(4.dp))
+                    Text(stringResource(R.string.shield_what_body), style = CachewType.Body.copy(fontSize = 14.sp), color = CachewColors.TextSecondary)
+                }
+                Spacer(Modifier.height(10.dp))
+                Text(stringResource(R.string.shield_rule), style = CachewType.Body.copy(fontSize = 14.sp), color = CachewColors.TextSecondary, modifier = Modifier.padding(horizontal = 6.dp))
+                Spacer(Modifier.height(12.dp))
                 if (locked) {
                     Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(horizontal = 6.dp)) {
                         Text("🔒", fontSize = 16.sp)
@@ -180,6 +189,7 @@ fun NightShieldScreen(onboarding: Boolean, onSaved: () -> Unit) {
                 enabled = valid && allowed,
                 onClick = {
                     store.nightShield = next
+                    store.shieldConfirmed = true
                     Reminders.rescheduleAll(context) // quiet hours may have moved
                     onSaved()
                 },

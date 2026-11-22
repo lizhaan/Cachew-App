@@ -61,7 +61,13 @@ private val HHMM = DateTimeFormatter.ofPattern("HH:mm")
 
 /** Me tab (mockup 25): Penny's level and the real settings, as a list. */
 @Composable
-fun MeScreen(onNightShield: () -> Unit, onShops: () -> Unit, onGoal: () -> Unit, onPermission: () -> Unit) {
+fun MeScreen(
+    onNightShield: () -> Unit,
+    onShops: () -> Unit,
+    onGoal: () -> Unit,
+    onPermission: () -> Unit,
+    onShowIntro: () -> Unit,
+) {
     val context = LocalContext.current
     val store = remember { Store.get(context) }
     val version by store.gameVersion.collectAsStateWithLifecycle()
@@ -116,6 +122,7 @@ fun MeScreen(onNightShield: () -> Unit, onShops: () -> Unit, onGoal: () -> Unit,
             val pkg = selected.firstOrNull() ?: ShopApps.recommended.first().packageName
             context.startActivity(PauseActivity.intent(context, pkg, System.currentTimeMillis(), demo = true))
         }
+        SettingRow(stringResource(R.string.me_show_intro), "", onShowIntro)
         SettingRow(stringResource(R.string.me_reset), "") { confirmReset = true }
     }
 
