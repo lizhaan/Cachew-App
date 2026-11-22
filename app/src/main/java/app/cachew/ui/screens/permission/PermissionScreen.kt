@@ -50,7 +50,6 @@ import app.cachew.ui.components.CachewBackground
 import app.cachew.ui.components.GlassCard
 import app.cachew.ui.components.OnboardingProgress
 import app.cachew.ui.components.PrimaryButton
-import app.cachew.ui.components.XiaomiPopupCard
 import app.cachew.ui.theme.CachewColors
 import app.cachew.ui.theme.CachewSize
 import app.cachew.ui.theme.CachewType
@@ -129,8 +128,6 @@ fun PermissionScreen(onboarding: Boolean, onContinue: () -> Unit, onSkip: () -> 
                         style = CachewType.Body.copy(fontWeight = FontWeight.SemiBold),
                         color = CachewColors.PurpleText,
                     )
-                    Spacer(Modifier.height(16.dp))
-                    XiaomiPopupCard()
                 } else if (stuck) {
                     Spacer(Modifier.height(20.dp))
                     Text(

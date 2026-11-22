@@ -33,17 +33,10 @@
     <string name="permission_why">Why we need this</string>
     <string name="permission_why_title">Why Cachew needs this</string>
     <string name="permission_why_body">Android only tells an app which other app is on screen through Accessibility. Cachew uses it for one thing: noticing that a shop you picked was opened, so it can pause you. It never reads the screen, never sees what you type or buy, and nothing leaves your phone.</string>
-    <string name="permission_still_off">Almost there: in Accessibility, open “Cachew shop pause” (on Xiaomi: Downloaded apps) and switch it on.</string>
+    <string name="permission_still_off">Almost there: in Accessibility, open “Cachew shop pause” (sometimes under Downloaded apps or Installed services) and switch it on.</string>
     <string name="permission_restricted_hint">Switch greyed out? Open Settings → Apps → Cachew → ⋮ → Allow restricted settings, then try again.</string>
     <string name="permission_not_now">Not now</string>
     <string name="permission_stuck">Cachew is switched on but Android stopped it (this happens after an update). In Accessibility, turn “Cachew shop pause” off and on again.</string>
-
-    <!-- Xiaomi / Redmi / POCO extra step -->
-    <string name="xiaomi_title">Two more steps on Xiaomi</string>
-    <string name="xiaomi_body">1. Autostart: turn it on for Cachew, or Xiaomi stops pauses when you swipe Cachew away.\n2. Other permissions: turn on “Display pop-up windows while running in the background”.</string>
-    <string name="xiaomi_autostart">Autostart</string>
-    <string name="xiaomi_open">Pop-ups</string>
-    <string name="xiaomi_done">Both on</string>
     <string name="ok">OK</string>
 
     <!-- Accessibility service (shown in system Settings → Accessibility) -->
@@ -341,6 +334,40 @@
     <string name="shield_rule">Pick your own hours any time. In the 2 hours before they start, they can only get longer, not shorter.</string>
     <string name="me_show_intro">Show the intro again</string>
 
+    <!-- Set up Cachew (every phone; the background step adapts to the phone maker) -->
+    <string name="setup_title">Set up Cachew</string>
+    <string name="setup_body">Three steps so Penny shows up on time, on any phone.</string>
+    <string name="setup_open">Open</string>
+    <string name="setup_app_info">App info</string>
+    <string name="setup_allow">Allow</string>
+    <string name="setup_autostart">Autostart</string>
+    <string name="setup_did_it">I did it</string>
+    <string name="setup_undo">Not yet</string>
+    <string name="setup_done">Done</string>
+    <string name="setup_access_title">Let Cachew notice shops</string>
+    <string name="setup_access_on">Cachew shop pause is on.</string>
+    <string name="setup_access_off">In Accessibility, find “Cachew shop pause” (sometimes under “Downloaded apps” or “Installed services”) and switch it on.</string>
+    <string name="setup_access_restricted">Switch greyed out? Tap it once, then open App info → ⋮ (top right) → “Allow restricted settings”, and switch it on again.</string>
+    <string name="setup_background_title">Let Cachew work in the background</string>
+    <string name="setup_background_xiaomi">Other permissions → “Display pop-up windows while running in the background” → Allow. Then turn on Autostart for Cachew.</string>
+    <string name="setup_background_huawei">Find Cachew, switch off “Manage automatically”, then allow Auto-launch, Secondary launch and Run in background.</string>
+    <string name="setup_background_oppo">Allow Cachew to auto launch and to run in the background (App info → Battery usage / Auto launch).</string>
+    <string name="setup_background_vivo">Allow Cachew to start in the background and to show pop-ups while running in the background.</string>
+    <string name="setup_background_samsung">Usually nothing to do on Samsung. If the pause only shows up after you open Cachew, check App info → Battery and allow background use.</string>
+    <string name="setup_background_other">Usually nothing to do. If the pause only shows up after you open Cachew, look in App info for “Autostart”, “Background activity” or “Pop-ups in background” and allow them.</string>
+    <string name="setup_background_why">Phones don\'t let Cachew check this one, so tick it yourself once it\'s done.</string>
+    <string name="setup_notif_title">Allow notifications</string>
+    <string name="setup_notif_body">So Penny can ask “Still want it?” when the wait is over.</string>
+    <string name="setup_test_title">Test it</string>
+    <string name="setup_test_body">Open one of your shops: the pause should appear right away. If it only appears after you open Cachew, step 2 isn\'t done yet.</string>
+    <string name="setup_left">%1$d left</string>
+    <string name="setup_all_set">All set</string>
+    <string name="den_setup_title">Finish setting up Cachew</string>
+    <plurals name="den_setup_body">
+        <item quantity="one">%d step left so the pause shows up on time.</item>
+        <item quantity="other">%d steps left so the pause shows up on time.</item>
+    </plurals>
+
     <!-- Tabs -->
     <string name="tab_den">Den</string>
     <string name="tab_waiting">Waiting list</string>
@@ -407,9 +434,6 @@
     <string name="me_goal">Savings goal</string>
     <string name="me_goal_value">%1$s · %2$s of %3$s</string>
     <string name="me_goal_none">Not set</string>
-    <string name="me_pauses">Pauses</string>
-    <string name="me_on">On</string>
-    <string name="me_off">Off</string>
     <string name="me_reset">Reset demo data</string>
     <string name="me_reset_title">Reset demo data?</string>
     <string name="me_reset_body">Waiting items, cashews, streak, hearts, stats and goals start from zero. Your shops and night shield stay.</string>

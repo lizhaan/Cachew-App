@@ -54,6 +54,13 @@ class Store private constructor(private val prefs: SharedPreferences) {
             if (prefs.getBoolean(KEY_ONBOARDING_DONE, false)) prefs.edit { putBoolean("shield_confirmed", true) }
             version = 3
         }
+        if (version < 4) {
+            // The old Xiaomi card's "Both on" becomes the ticked background step.
+            if (prefs.getBoolean(KEY_XIAOMI_POPUPS, false)) {
+                prefs.edit { putStringSet(KEY_SETUP_CONFIRMED, setOf(PhoneSetup.STEP_BACKGROUND)) }
+            }
+            version = 4
+        }
         prefs.edit {
             putInt(KEY_DATA_VERSION, version)
             remove(KEY_USD_MIGRATED)
@@ -96,10 +103,13 @@ class Store private constructor(private val prefs: SharedPreferences) {
             ?.let { runCatching { Json.decodeFromString<Map<String, String>>(it) }.getOrNull() } ?: emptyMap()
         set(value) = prefs.edit { putString(KEY_PROFILE, Json.encodeToString(value)) }
 
-    /** User said they turned on Xiaomi's "pop-up windows in background" (we can't check it ourselves). */
-    var xiaomiPopupsDone: Boolean
-        get() = prefs.getBoolean(KEY_XIAOMI_POPUPS, false)
-        set(value) = prefs.edit { putBoolean(KEY_XIAOMI_POPUPS, value) }
+    /**
+     * Setup steps the user ticked on the Set up Cachew screen (PhoneSetup.STEP_BACKGROUND):
+     * the phone maker's background switches, which apps can't read.
+     */
+    var setupConfirmed: Set<String>
+        get() = prefs.getStringSet(KEY_SETUP_CONFIRMED, emptySet())!!.toSet()
+        set(value) = prefs.edit { putStringSet(KEY_SETUP_CONFIRMED, value.toSet()) }
 
     // --- Shop session (stage 3) -------------------------------------------------------
     // After "Just look" / "I need something specific" the shop is open for 10 minutes.
@@ -451,6 +461,7 @@ class Store private constructor(private val prefs: SharedPreferences) {
         private const val KEY_ONBOARDING_DONE = "onboarding_done"
         private const val KEY_SESSION = "session"
         private const val KEY_PROFILE = "onboarding_profile"
+        private const val KEY_SETUP_CONFIRMED = "setup_confirmed"
         private const val KEY_SHIELD_CONFIRMED = "shield_confirmed"
         private const val KEY_GOAL = "goal"
         private const val KEY_GOALS_DONE = "goals_done"

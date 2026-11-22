@@ -50,7 +50,7 @@ import app.cachew.ui.components.HeartsRow
 import app.cachew.ui.components.Penny
 import app.cachew.ui.components.PennyPose
 import app.cachew.ui.components.PrimaryButton
-import app.cachew.ui.components.XiaomiPopupCard
+import app.cachew.data.PhoneSetup
 import app.cachew.ui.theme.CachewColors
 import app.cachew.ui.theme.CachewSize
 import app.cachew.ui.theme.CachewType
@@ -69,7 +69,7 @@ private val HHMM = DateTimeFormatter.ofPattern("HH:mm")
  * Penny's level; Penny's winter stash (cashews) with her next reward; the night shield.
  */
 @Composable
-fun DenScreen(onTurnOn: () -> Unit, onNightShield: () -> Unit, onGoal: () -> Unit) {
+fun DenScreen(onTurnOn: () -> Unit, onSetup: () -> Unit, onNightShield: () -> Unit, onGoal: () -> Unit) {
     val context = LocalContext.current
     val store = remember { Store.get(context) }
 
@@ -120,7 +120,16 @@ fun DenScreen(onTurnOn: () -> Unit, onNightShield: () -> Unit, onGoal: () -> Uni
             ServiceCard(state = serviceState, onTurnOn = onTurnOn)
             Spacer(Modifier.height(CachewSize.Gap))
         } else {
-            XiaomiPopupCard(Modifier.padding(bottom = CachewSize.Gap))
+            // Service is on: remind about the other setup steps until they're all done.
+            val left = remember(resumes, gameVersion) { PhoneSetup.stepsLeft(context, store.setupConfirmed) }
+            if (left > 0) {
+                GlassCard(Modifier.fillMaxWidth(), selected = true, onClick = onSetup) {
+                    Text(stringResource(R.string.den_setup_title), style = CardTitle, color = CachewColors.Title)
+                    Spacer(Modifier.height(4.dp))
+                    Text(pluralStringResource(R.plurals.den_setup_body, left, left), style = CachewType.Body, color = CachewColors.TextSecondary)
+                }
+                Spacer(Modifier.height(CachewSize.Gap))
+            }
         }
 
         // MONEY SAVED THIS MONTH

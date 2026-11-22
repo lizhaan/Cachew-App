@@ -47,7 +47,7 @@ import app.cachew.data.ShopApps
 import app.cachew.data.Store
 import app.cachew.pause.PauseActivity
 import app.cachew.reminders.Reminders
-import app.cachew.service.ShopWatchService
+import app.cachew.data.PhoneSetup
 import app.cachew.ui.components.ChoiceLabel
 import app.cachew.ui.components.ChoiceTile
 import app.cachew.ui.components.GlassCard
@@ -65,7 +65,7 @@ fun MeScreen(
     onNightShield: () -> Unit,
     onShops: () -> Unit,
     onGoal: () -> Unit,
-    onPermission: () -> Unit,
+    onSetup: () -> Unit,
     onShowIntro: () -> Unit,
 ) {
     val context = LocalContext.current
@@ -78,7 +78,7 @@ fun MeScreen(
     val shield = remember(version, resumes) { store.nightShield }
     val goal = remember(version, resumes) { store.goal }
     val goalProgress = remember(version, resumes) { store.goalProgress() }
-    val serviceOn = remember(resumes) { ShopWatchService.isEnabled(context) }
+    val setupLeft = remember(resumes) { PhoneSetup.stepsLeft(context, store.setupConfirmed) }
     var waitHours by remember { mutableIntStateOf(store.defaultWaitHours) }
     var pickingWait by remember { mutableStateOf(false) }
     var confirmReset by remember { mutableStateOf(false) }
@@ -116,7 +116,11 @@ fun MeScreen(
             } ?: stringResource(R.string.me_goal_none),
             onGoal,
         )
-        SettingRow(stringResource(R.string.me_pauses), stringResource(if (serviceOn) R.string.me_on else R.string.me_off), onPermission)
+        SettingRow(
+            stringResource(R.string.setup_title),
+            if (setupLeft == 0) stringResource(R.string.setup_all_set) else stringResource(R.string.setup_left, setupLeft),
+            onSetup,
+        )
         SettingRow(stringResource(R.string.den_try_pause), "") {
             // Demo uses the first picked shop (or Amazon), so the pill looks real.
             val pkg = selected.firstOrNull() ?: ShopApps.recommended.first().packageName

@@ -16,6 +16,7 @@ import app.cachew.ui.screens.apppicker.AppPickerScreen
 import app.cachew.ui.components.Tab
 import app.cachew.ui.components.TabScaffold
 import app.cachew.ui.screens.den.DenScreen
+import app.cachew.ui.screens.setup.SetupScreen
 import app.cachew.ui.screens.onboarding.AboutYouScreen
 import app.cachew.ui.screens.onboarding.FactsScreen
 import app.cachew.ui.screens.onboarding.HowItWorksScreen
@@ -53,6 +54,9 @@ import kotlinx.serialization.Serializable
 
 /** Screen 10. In onboarding it comes after 09 (order 08 → 09 → 10 → den). */
 @Serializable data class NightShieldRoute(val onboarding: Boolean)
+
+/** "Set up Cachew": the checklist for every phone (after 09 in onboarding, and from Me). */
+@Serializable data class SetupRoute(val onboarding: Boolean)
 
 // The four tabs (bottom bar).
 @Serializable object DenRoute
@@ -112,9 +116,16 @@ fun CachewNavHost(openItemId: String? = null, onItemOpened: () -> Unit = {}) {
             val route = entry.toRoute<PermissionRoute>()
             // Continue (service on) and Not now (service off) lead to the same place.
             val leave = {
-                if (route.onboarding) nav.navigate(NightShieldRoute(onboarding = true)) else nav.popBackStack()
+                if (route.onboarding) nav.navigate(SetupRoute(onboarding = true)) else nav.popBackStack()
             }
             PermissionScreen(onboarding = route.onboarding, onContinue = { leave() }, onSkip = { leave() })
+        }
+        composable<SetupRoute> { entry ->
+            val route = entry.toRoute<SetupRoute>()
+            SetupScreen(
+                onboarding = route.onboarding,
+                onDone = { if (route.onboarding) nav.navigate(NightShieldRoute(onboarding = true)) else nav.popBackStack() },
+            )
         }
         composable<NightShieldRoute> { entry ->
             val route = entry.toRoute<NightShieldRoute>()
@@ -151,6 +162,7 @@ fun CachewNavHost(openItemId: String? = null, onItemOpened: () -> Unit = {}) {
             TabScaffold(Tab.Den, ::openTab) {
                 DenScreen(
                     onTurnOn = { nav.navigate(PermissionRoute(onboarding = false)) },
+                    onSetup = { nav.navigate(SetupRoute(onboarding = false)) },
                     onNightShield = { nav.navigate(NightShieldRoute(onboarding = false)) },
                     onGoal = { nav.navigate(GoalRoute) },
                 )
@@ -173,7 +185,7 @@ fun CachewNavHost(openItemId: String? = null, onItemOpened: () -> Unit = {}) {
                     onNightShield = { nav.navigate(NightShieldRoute(onboarding = false)) },
                     onShops = { nav.navigate(PickShopsRoute(onboarding = false)) },
                     onGoal = { nav.navigate(GoalRoute) },
-                    onPermission = { nav.navigate(PermissionRoute(onboarding = false)) },
+                    onSetup = { nav.navigate(SetupRoute(onboarding = false)) },
                     onShowIntro = {
                         // Replays the first-run flow (handy for demos); data stays as it is.
                         store.onboardingDone = false
