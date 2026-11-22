@@ -69,7 +69,7 @@ private val HHMM = DateTimeFormatter.ofPattern("HH:mm")
  * Penny's level; Penny's winter stash (cashews) with her next reward; the night shield.
  */
 @Composable
-fun DenScreen(onTurnOn: () -> Unit, onSetup: () -> Unit, onNightShield: () -> Unit, onGoal: () -> Unit) {
+fun DenScreen(onSetup: () -> Unit, onNightShield: () -> Unit, onGoal: () -> Unit) {
     val context = LocalContext.current
     val store = remember { Store.get(context) }
 
@@ -117,7 +117,7 @@ fun DenScreen(onTurnOn: () -> Unit, onSetup: () -> Unit, onNightShield: () -> Un
         Spacer(Modifier.height(16.dp))
 
         if (serviceState != ShopWatchService.State.On) {
-            ServiceCard(state = serviceState, onTurnOn = onTurnOn)
+            ServiceCard(state = serviceState, onTurnOn = onSetup)
             Spacer(Modifier.height(CachewSize.Gap))
         } else {
             // Service is on: remind about the other setup steps until they're all done.

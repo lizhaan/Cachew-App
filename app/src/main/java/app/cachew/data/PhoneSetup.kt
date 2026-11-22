@@ -45,6 +45,9 @@ object PhoneSetup {
      */
     const val STEP_BACKGROUND = "background"
 
+    /** Android 13+: "Allow restricted settings" in Cachew's app info (needed before Accessibility). */
+    const val STEP_RESTRICTED = "restricted"
+
     // ---- What we can check ---------------------------------------------------------------
 
     fun accessibilityOn(context: Context): Boolean = ShopWatchService.isEnabled(context)

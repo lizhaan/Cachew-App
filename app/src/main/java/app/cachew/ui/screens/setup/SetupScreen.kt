@@ -59,11 +59,14 @@ import app.cachew.ui.theme.Inter
 
 /**
  * "Set up Cachew": everything the phone needs so the pause shows up on time, for every brand.
- *  1. Accessibility (checked; with the Android 13+ "restricted settings" way out)
- *  2. Work in the background (can't be checked: the user ticks it; text and button adapt to the
+ *  1. Allow restricted settings (Android 13+ only): apps installed from a file can't get
+ *     Accessibility until this is allowed in Cachew's app info. Ticked by the user, or done
+ *     automatically once Accessibility is on.
+ *  2. Accessibility (checked)
+ *  3. Work in the background (can't be checked: the user ticks it; text and button adapt to the
  *     phone maker, see PhoneSetup.openBackground)
- *  3. Notifications (checked)
- * Then a real test: open a shop. Shown in onboarding after the permission screen and in Me.
+ *  4. Notifications (checked)
+ * Then a real test: open a shop. Shown in onboarding right after picking shops, and in Me.
  */
 @Composable
 fun SetupScreen(onboarding: Boolean, onDone: () -> Unit) {
@@ -78,6 +81,15 @@ fun SetupScreen(onboarding: Boolean, onDone: () -> Unit) {
     val notifications = remember(resumes) { PhoneSetup.notificationsOn(context) }
     var confirmed by remember { mutableStateOf(store.setupConfirmed) }
     val backgroundDone = PhoneSetup.STEP_BACKGROUND in confirmed
+    // Restricted settings only exist on Android 13+; once Accessibility is on they were clearly allowed.
+    val needsRestricted = Build.VERSION.SDK_INT >= 33
+    val restrictedDone = service == ShopWatchService.State.On || PhoneSetup.STEP_RESTRICTED in confirmed
+    var number = 0
+    fun toggle(step: String) {
+        val next = if (step in confirmed) confirmed - step else confirmed + step
+        store.setupConfirmed = next
+        confirmed = next
+    }
 
     val askNotifications = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { resumes++ }
 
@@ -105,9 +117,23 @@ fun SetupScreen(onboarding: Boolean, onDone: () -> Unit) {
                 }
                 Spacer(Modifier.height(18.dp))
 
-                // 1. Accessibility
+                // 1. Allow restricted settings (Android 13+)
+                if (needsRestricted) {
+                    StepCard(
+                        number = ++number,
+                        done = restrictedDone,
+                        title = stringResource(R.string.setup_restricted_title),
+                        body = stringResource(R.string.setup_restricted_body),
+                        hint = stringResource(R.string.setup_restricted_hint),
+                        actions = listOf(stringResource(R.string.setup_open_settings) to { PhoneSetup.openAppInfo(context) }),
+                        confirm = if (service == ShopWatchService.State.On) null else
+                            stringResource(if (PhoneSetup.STEP_RESTRICTED in confirmed) R.string.setup_undo else R.string.setup_did_it) to { toggle(PhoneSetup.STEP_RESTRICTED) },
+                    )
+                }
+
+                // 2. Accessibility
                 StepCard(
-                    number = 1,
+                    number = ++number,
                     done = service == ShopWatchService.State.On,
                     title = stringResource(R.string.setup_access_title),
                     body = stringResource(
@@ -117,16 +143,14 @@ fun SetupScreen(onboarding: Boolean, onDone: () -> Unit) {
                             ShopWatchService.State.Off -> R.string.setup_access_off
                         }
                     ),
-                    hint = if (service == ShopWatchService.State.Off && Build.VERSION.SDK_INT >= 33) stringResource(R.string.setup_access_restricted) else null,
-                    actions = buildList {
-                        if (service != ShopWatchService.State.On) add(stringResource(R.string.setup_open) to { PhoneSetup.openAccessibility(context) })
-                        if (service == ShopWatchService.State.Off && Build.VERSION.SDK_INT >= 33) add(stringResource(R.string.setup_app_info) to { PhoneSetup.openAppInfo(context) })
-                    },
+                    hint = stringResource(if (service == ShopWatchService.State.Off && needsRestricted) R.string.setup_access_grey else R.string.setup_access_privacy),
+                    actions = if (service == ShopWatchService.State.On) emptyList() else
+                        listOf(stringResource(R.string.setup_open) to { PhoneSetup.openAccessibility(context) }),
                 )
 
-                // 2. Background (phone maker's switches; the user confirms)
+                // 3. Background (phone maker's switches; the user confirms)
                 StepCard(
-                    number = 2,
+                    number = ++number,
                     done = backgroundDone,
                     title = stringResource(R.string.setup_background_title),
                     body = stringResource(
@@ -144,16 +168,12 @@ fun SetupScreen(onboarding: Boolean, onDone: () -> Unit) {
                         add(stringResource(R.string.setup_open) to { PhoneSetup.openBackground(context) })
                         if (brand == PhoneSetup.Brand.Xiaomi) add(stringResource(R.string.setup_autostart) to { PhoneSetup.openAutostart(context) })
                     },
-                    confirm = stringResource(if (backgroundDone) R.string.setup_undo else R.string.setup_did_it) to {
-                        val next = if (backgroundDone) confirmed - PhoneSetup.STEP_BACKGROUND else confirmed + PhoneSetup.STEP_BACKGROUND
-                        store.setupConfirmed = next
-                        confirmed = next
-                    },
+                    confirm = stringResource(if (backgroundDone) R.string.setup_undo else R.string.setup_did_it) to { toggle(PhoneSetup.STEP_BACKGROUND) },
                 )
 
-                // 3. Notifications
+                // 4. Notifications
                 StepCard(
-                    number = 3,
+                    number = ++number,
                     done = notifications,
                     title = stringResource(R.string.setup_notif_title),
                     body = stringResource(R.string.setup_notif_body),

@@ -21,21 +21,7 @@
     <string name="app_picker_selected">added</string>
     <string name="back">Back</string>
 
-    <!-- 09 Permission -->
-    <string name="permission_title">Let Cachew notice when a shop opens</string>
-    <string name="permission_see_title">What we see</string>
-    <string name="permission_see_body">That a shopping app was opened, and when.</string>
-    <string name="permission_never_title">What we never see</string>
-    <string name="permission_never_body">Your card, your bank, your passwords or what\'s in your cart.</string>
-    <string name="permission_allow">Allow access</string>
     <string name="permission_continue">Continue</string>
-    <string name="permission_is_on">Access is on</string>
-    <string name="permission_why">Why we need this</string>
-    <string name="permission_why_title">Why Cachew needs this</string>
-    <string name="permission_why_body">Android only tells an app which other app is on screen through Accessibility. Cachew uses it for one thing: noticing that a shop you picked was opened, so it can pause you. It never reads the screen, never sees what you type or buy, and nothing leaves your phone.</string>
-    <string name="permission_still_off">Almost there: in Accessibility, open “Cachew shop pause” (sometimes under Downloaded apps or Installed services) and switch it on.</string>
-    <string name="permission_restricted_hint">Switch greyed out? Open Settings → Apps → Cachew → ⋮ → Allow restricted settings, then try again.</string>
-    <string name="permission_not_now">Not now</string>
     <string name="permission_stuck">Cachew is switched on but Android stopped it (this happens after an update). In Accessibility, turn “Cachew shop pause” off and on again.</string>
     <string name="ok">OK</string>
 
@@ -336,18 +322,22 @@
 
     <!-- Set up Cachew (every phone; the background step adapts to the phone maker) -->
     <string name="setup_title">Set up Cachew</string>
-    <string name="setup_body">Three steps so Penny shows up on time, on any phone.</string>
+    <string name="setup_body">A few steps so Penny shows up on time, on any phone.</string>
     <string name="setup_open">Open</string>
-    <string name="setup_app_info">App info</string>
     <string name="setup_allow">Allow</string>
     <string name="setup_autostart">Autostart</string>
     <string name="setup_did_it">I did it</string>
     <string name="setup_undo">Not yet</string>
     <string name="setup_done">Done</string>
+    <string name="setup_open_settings">Open settings</string>
+    <string name="setup_restricted_title">Allow restricted settings</string>
+    <string name="setup_restricted_body">In Cachew\'s settings tap ⋮ (top right) → “Allow restricted settings”. Android asks this for apps installed from a file, before the next step.</string>
+    <string name="setup_restricted_hint">No ⋮ or no such option? Do step 2 once (the switch will be grey and say “Restricted setting”), then come back here.</string>
+    <string name="setup_access_grey">Switch grey? Do step 1 first.</string>
+    <string name="setup_access_privacy">Cachew only sees which app was opened. Never your screen, card or cart.</string>
     <string name="setup_access_title">Let Cachew notice shops</string>
     <string name="setup_access_on">Cachew shop pause is on.</string>
     <string name="setup_access_off">In Accessibility, find “Cachew shop pause” (sometimes under “Downloaded apps” or “Installed services”) and switch it on.</string>
-    <string name="setup_access_restricted">Switch greyed out? Tap it once, then open App info → ⋮ (top right) → “Allow restricted settings”, and switch it on again.</string>
     <string name="setup_background_title">Let Cachew work in the background</string>
     <string name="setup_background_xiaomi">Other permissions → “Display pop-up windows while running in the background” → Allow. Then turn on Autostart for Cachew.</string>
     <string name="setup_background_huawei">Find Cachew, switch off “Manage automatically”, then allow Auto-launch, Secondary launch and Run in background.</string>

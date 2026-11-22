@@ -28,7 +28,6 @@ import app.cachew.ui.screens.me.GoalScreen
 import app.cachew.ui.screens.me.MeScreen
 import app.cachew.ui.screens.stats.StatsScreen
 import app.cachew.ui.screens.waiting.WaitingListScreen
-import app.cachew.ui.screens.permission.PermissionScreen
 import app.cachew.ui.screens.pickshops.PickShopsScreen
 import kotlinx.serialization.Serializable
 
@@ -49,13 +48,11 @@ import kotlinx.serialization.Serializable
 
 @Serializable object AppPickerRoute
 
-/** Screen 09. */
-@Serializable data class PermissionRoute(val onboarding: Boolean)
 
 /** Screen 10. In onboarding it comes after 09 (order 08 → 09 → 10 → den). */
 @Serializable data class NightShieldRoute(val onboarding: Boolean)
 
-/** "Set up Cachew": the checklist for every phone (after 09 in onboarding, and from Me). */
+/** "Set up Cachew": the checklist for every phone (right after picking shops in onboarding, and from Me). */
 @Serializable data class SetupRoute(val onboarding: Boolean)
 
 // The four tabs (bottom bar).
@@ -105,20 +102,12 @@ fun CachewNavHost(openItemId: String? = null, onItemOpened: () -> Unit = {}) {
                 onboarding = route.onboarding,
                 onOtherApp = { nav.navigate(AppPickerRoute) },
                 onContinue = {
-                    if (route.onboarding) nav.navigate(PermissionRoute(onboarding = true)) else nav.popBackStack()
+                    if (route.onboarding) nav.navigate(SetupRoute(onboarding = true)) else nav.popBackStack()
                 },
             )
         }
         composable<AppPickerRoute> {
             AppPickerScreen(onDone = { nav.popBackStack() })
-        }
-        composable<PermissionRoute> { entry ->
-            val route = entry.toRoute<PermissionRoute>()
-            // Continue (service on) and Not now (service off) lead to the same place.
-            val leave = {
-                if (route.onboarding) nav.navigate(SetupRoute(onboarding = true)) else nav.popBackStack()
-            }
-            PermissionScreen(onboarding = route.onboarding, onContinue = { leave() }, onSkip = { leave() })
         }
         composable<SetupRoute> { entry ->
             val route = entry.toRoute<SetupRoute>()
@@ -161,7 +150,6 @@ fun CachewNavHost(openItemId: String? = null, onItemOpened: () -> Unit = {}) {
         composable<DenRoute> {
             TabScaffold(Tab.Den, ::openTab) {
                 DenScreen(
-                    onTurnOn = { nav.navigate(PermissionRoute(onboarding = false)) },
                     onSetup = { nav.navigate(SetupRoute(onboarding = false)) },
                     onNightShield = { nav.navigate(NightShieldRoute(onboarding = false)) },
                     onGoal = { nav.navigate(GoalRoute) },

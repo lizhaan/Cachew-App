@@ -14,8 +14,8 @@ val keystoreProps = Properties().apply {
 val hasReleaseKey = keystoreProps.getProperty("storeFile") != null
 
 // Bump BOTH before every new APK, or phones won't install it over the old one.
-val cachewVersionCode = 5
-val cachewVersionName = "1.3"
+val cachewVersionCode = 6
+val cachewVersionName = "1.4"
 
 android {
     namespace = "app.cachew"
