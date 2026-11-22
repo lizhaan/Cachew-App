@@ -151,13 +151,16 @@ fun FactsScreen(onNext: () -> Unit) {
 
 // ---- 03 About you (optional) ------------------------------------------------------------
 
-/** One "About you" question: key in Store.profile, option ids and their labels (strings.xml arrays). */
-private class Field(val key: String, val title: Int, val ids: List<String>, val labels: Int)
+/**
+ * One "About you" question: key in Store.profile, option ids and their labels (strings.xml arrays).
+ * [multi] = several answers allowed; they're stored comma-separated ("clothes,beauty").
+ */
+private class Field(val key: String, val title: Int, val ids: List<String>, val labels: Int, val multi: Boolean = false)
 
 private val ABOUT_FIELDS = listOf(
     Field("age", R.string.ob_about_age, listOf("18_24", "25_34", "35_44", "45_plus"), R.array.ob_about_age_options),
     Field("gender", R.string.ob_about_gender, listOf("woman", "man", "non_binary", "no_say"), R.array.ob_about_gender_options),
-    Field("category", R.string.ob_about_category, listOf("clothes", "beauty", "home", "gadgets", "food"), R.array.ob_about_category_options),
+    Field("category", R.string.ob_about_category, listOf("clothes", "beauty", "home", "gadgets", "food"), R.array.ob_about_category_options, multi = true),
     Field("source", R.string.ob_about_source, listOf("tiktok", "instagram", "reddit", "friend", "app_store"), R.array.ob_about_source_options),
 )
 
@@ -192,9 +195,13 @@ fun AboutYouScreen(onNext: () -> Unit) {
             Spacer(Modifier.height(8.dp))
             val labels = stringArrayResource(field.labels)
             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                val chosen = answers[field.key]?.split(",")?.filter { it.isNotEmpty() }.orEmpty()
                 field.ids.forEachIndexed { i, id ->
-                    OptionChip(labels[i], selected = answers[field.key] == id) {
-                        answersRaw = (answers + (field.key to id)).entries.joinToString(";") { "${it.key}=${it.value}" }
+                    OptionChip(labels[i], selected = id in chosen) {
+                        // Multi-choice: tap adds or removes; single choice: tap replaces.
+                        val next = if (field.multi) (if (id in chosen) chosen - id else chosen + id) else listOf(id)
+                        val updated = if (next.isEmpty()) answers - field.key else answers + (field.key to next.joinToString(","))
+                        answersRaw = updated.entries.joinToString(";") { "${it.key}=${it.value}" }
                     }
                 }
             }
@@ -332,13 +339,6 @@ fun QuizResultScreen(onNext: () -> Unit) {
                         )
                     }
                 }
-            }
-        }
-        Spacer(Modifier.height(CachewSize.Gap))
-        GlassCard(Modifier.fillMaxWidth()) {
-            Row {
-                Text(stringResource(R.string.ob_result_kept), style = CachewType.Body.copy(fontWeight = FontWeight.Bold), color = CachewColors.Title, modifier = Modifier.weight(1f))
-                Text(stringArrayResource(R.array.ob_result_things)[Quiz.keptThing(yearly)], style = CachewType.Body.copy(fontWeight = FontWeight.Bold), color = CachewColors.Gold)
             }
         }
     }

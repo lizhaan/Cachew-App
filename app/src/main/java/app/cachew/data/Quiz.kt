@@ -26,11 +26,4 @@ object Quiz {
         else -> 3        // late at night: 11 PM
     }
 
-    /** "Kept instead, that's …": index into strings.xml quiz_kept_things, by how much it is. */
-    fun keptThing(yearly: Int): Int = when {
-        yearly <= 300 -> 0
-        yearly <= 1200 -> 1
-        yearly <= 2700 -> 2
-        else -> 3
-    }
 }

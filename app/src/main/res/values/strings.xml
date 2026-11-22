@@ -307,14 +307,6 @@
         <item>Mostly right after payday.</item>
     </string-array>
     <string name="ob_result_guard">That\'s the window Cachew will guard.</string>
-    <string name="ob_result_kept">Kept instead, that\'s</string>
-    <!-- Quiz.keptThing: up to $300, $1,200, $2,700, more. -->
-    <string-array name="ob_result_things">
-        <item>new sneakers</item>
-        <item>a flight to Tokyo</item>
-        <item>a week in Tokyo</item>
-        <item>two weeks in Tokyo</item>
-    </string-array>
     <string name="ob_result_button">Let\'s keep it</string>
 
     <string name="ob_penny_title">Meet Penny</string>
