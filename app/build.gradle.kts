@@ -91,10 +91,13 @@ dependencies {
 // (the file people download). AGP 9 has no outputFileName any more, so it's a plain copy.
 tasks.register<Copy>("cachewApk") {
     dependsOn("assembleRelease")
+    // Plain local copy: the configuration cache can't store a reference to the build script itself.
+    val keyPresent = hasReleaseKey
+    val apkName = "Cachew-$cachewVersionName.apk"
     doFirst {
-        check(hasReleaseKey) { "No keystore.properties: create the release key first (README, section about releases)." }
+        check(keyPresent) { "No keystore.properties: create the release key first (README, section about releases)." }
     }
     from(layout.buildDirectory.dir("outputs/apk/release")) { include("*-release.apk") }
-    rename { "Cachew-$cachewVersionName.apk" }
+    rename { apkName }
     into(rootProject.layout.projectDirectory.dir("release"))
 }
