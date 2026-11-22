@@ -67,6 +67,8 @@ fun MeScreen(
     onGoal: () -> Unit,
     onSetup: () -> Unit,
     onShowIntro: () -> Unit,
+    /** After "Reset demo data": the app starts over from the first onboarding screen. */
+    onReset: () -> Unit,
 ) {
     val context = LocalContext.current
     val store = remember { Store.get(context) }
@@ -169,6 +171,7 @@ fun MeScreen(
                     File(context.filesDir, "thumbs").deleteRecursively()
                     store.resetDemoData()
                     confirmReset = false
+                    onReset()
                 }) { Text(stringResource(R.string.me_reset_confirm)) }
             },
             dismissButton = { TextButton(onClick = { confirmReset = false }) { Text(stringResource(R.string.cancel)) } },

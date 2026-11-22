@@ -436,7 +436,7 @@
     <string name="me_goal_none">Not set</string>
     <string name="me_reset">Reset demo data</string>
     <string name="me_reset_title">Reset demo data?</string>
-    <string name="me_reset_body">Waiting items, cashews, streak, hearts, stats and goals start from zero. Your shops and night shield stay.</string>
+    <string name="me_reset_body">Cachew starts over from the very first screen. Waiting items, cashews, streak, hearts, stats and goals go back to zero. Your shops and night shield stay.</string>
     <string name="me_reset_confirm">Reset</string>
 
     <!-- Savings goal -->

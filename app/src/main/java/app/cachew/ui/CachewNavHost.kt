@@ -186,6 +186,7 @@ fun CachewNavHost(openItemId: String? = null, onItemOpened: () -> Unit = {}) {
                     onShops = { nav.navigate(PickShopsRoute(onboarding = false)) },
                     onGoal = { nav.navigate(GoalRoute) },
                     onSetup = { nav.navigate(SetupRoute(onboarding = false)) },
+                    onReset = { nav.navigate(WelcomeRoute) { popUpTo(0) { inclusive = true } } },
                     onShowIntro = {
                         // Replays the first-run flow (handy for demos); data stays as it is.
                         store.onboardingDone = false

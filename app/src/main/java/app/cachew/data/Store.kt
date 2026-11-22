@@ -399,16 +399,20 @@ class Store private constructor(private val prefs: SharedPreferences) {
     }
 
     /**
-     * Me → "Reset demo data": a clean start for a demo. Waiting items, cashews, streak, hearts,
-     * pause log, goals and the running session go; picked shops, onboarding, night shield and
-     * waiting time stay. (The caller cancels reminders and deletes photos.)
+     * Me → "Reset demo data": a clean start for a demo, from the first onboarding screen.
+     * Waiting items, cashews, streak, hearts, pause log, goals, the running session, onboarding
+     * answers and ticked setup steps go. Picked shops, night shield and waiting time stay (shown
+     * again in onboarding), and so does the shield lock: a reset at night can't switch it off.
+     * (The caller cancels reminders and deletes photos.)
      */
     fun resetDemoData() {
         prefs.edit {
             listOf(
                 KEY_ITEMS, KEY_LOG, KEY_CASHEWS, KEY_FIRST_DAY, KEY_LAST_BUY_ANYWAY, KEY_HEARTS_MONTH, KEY_HEARTS_USED,
                 KEY_SESSION, KEY_CLOSE_DAY, KEY_CLOSE_COUNT, KEY_BONUS_MONTH, KEY_STREAK_BONUS, KEY_GOAL, KEY_GOALS_DONE,
+                KEY_PROFILE, KEY_SETUP_CONFIRMED, KEY_NOTIF_ASKED,
             ).forEach(::remove)
+            putBoolean(KEY_ONBOARDING_DONE, false)
         }
         changed()
     }
