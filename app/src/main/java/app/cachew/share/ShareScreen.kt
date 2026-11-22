@@ -4,7 +4,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import app.cachew.data.RewardInfo
-import app.cachew.ui.components.ChoiceLabel
 import app.cachew.ui.components.ChoiceTile
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -30,6 +29,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import app.cachew.ui.theme.Inter
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.text.font.FontWeight
 import app.cachew.R
 import app.cachew.data.Money
 import app.cachew.data.ShopLabel
@@ -165,7 +167,10 @@ fun ShareScreen(
                             height = 44.dp,
                             radius = 14.dp,
                             modifier = Modifier.weight(1f),
-                        ) { ChoiceLabel(label) }
+                        ) {
+                            // Smaller than the usual tile label so "$50–100" fits a quarter of the row.
+                            Text(label, fontFamily = Inter, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = CachewColors.Text, maxLines = 1, softWrap = false)
+                        }
                     }
                 }
             }

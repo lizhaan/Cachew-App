@@ -1,5 +1,9 @@
 package app.cachew.ui.screens.pickshops
 
+import android.widget.Toast
+import androidx.compose.ui.text.font.FontWeight
+import java.time.LocalTime
+import java.time.format.DateTimeFormatter
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -66,6 +70,20 @@ fun PickShopsScreen(
     val store = remember { Store.get(context) }
     val selected by store.selectedPackages.collectAsStateWithLifecycle()
 
+    // Night shield lock (from 2 h before the night until the morning): shops can be added, not
+    // removed, so the shield can't be dodged by unticking the shop. Not during onboarding.
+    val shield = remember { store.nightShield }
+    val shopsLocked = remember { !onboarding && shield.isLocked(LocalTime.now()) }
+    val lockedUntil = shield.to.format(DateTimeFormatter.ofPattern("HH:mm"))
+    val lockedMessage = stringResource(R.string.shops_locked, lockedUntil)
+    fun tap(pkg: String) {
+        if (shopsLocked && pkg in selected) {
+            Toast.makeText(context, lockedMessage, Toast.LENGTH_SHORT).show()
+        } else {
+            store.toggle(pkg)
+        }
+    }
+
     // Custom apps shown as tiles. An app stays visible after it's unticked until the user
     // leaves the screen, so a mis-tap can be undone. Saved as one string so it survives
     // the trip to the picker and back (rememberSaveable needs Bundle-friendly types).
@@ -99,7 +117,7 @@ fun PickShopsScreen(
             verticalArrangement = Arrangement.spacedBy(CachewSize.Gap),
         ) {
             item(span = { GridItemSpan(maxLineSpan) }) {
-                Header(onboarding)
+                Header(onboarding, if (shopsLocked) lockedMessage else null)
             }
             items(ShopApps.recommended, key = { it.packageName }) { shop ->
                 val isInstalled = installed[shop.packageName] == true
@@ -109,7 +127,7 @@ fun PickShopsScreen(
                     selected = shop.packageName in selected,
                     dimmed = !isInstalled,
                     caption = if (isInstalled) null else stringResource(R.string.pick_shops_not_installed),
-                    onClick = { store.toggle(shop.packageName) },
+                    onClick = { tap(shop.packageName) },
                 )
             }
             items(shownCustom, key = { it }) { pkg ->
@@ -120,7 +138,7 @@ fun PickShopsScreen(
                         ?: TileIcon.Letter(pkg.substringAfterLast('.').take(1).uppercase(), CachewColors.Purple),
                     selected = pkg in selected,
                     dimmed = info == null && pkg in customInfo,
-                    onClick = { store.toggle(pkg) },
+                    onClick = { tap(pkg) },
                 )
             }
             item(key = "other") {
@@ -155,7 +173,7 @@ fun PickShopsScreen(
 }
 
 @Composable
-private fun Header(onboarding: Boolean) {
+private fun Header(onboarding: Boolean, lockedMessage: String?) {
     Column(Modifier.statusBarsPadding().padding(top = 16.dp, bottom = 12.dp)) {
         if (onboarding) {
             // Step 3 of 4 as in the mockup: welcome → Penny → shops → permission.
@@ -167,6 +185,10 @@ private fun Header(onboarding: Boolean) {
         Text(stringResource(R.string.pick_shops_title), style = CachewType.H1, color = CachewColors.Title)
         Spacer(Modifier.height(10.dp))
         Text(stringResource(R.string.pick_shops_subtitle), style = CachewType.Body, color = CachewColors.TextSecondary)
+        if (lockedMessage != null) {
+            Spacer(Modifier.height(10.dp))
+            Text("🔒 $lockedMessage", style = CachewType.Body.copy(fontWeight = FontWeight.SemiBold), color = CachewColors.PurpleText)
+        }
         Box(Modifier.height(8.dp))
     }
 }

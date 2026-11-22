@@ -6,6 +6,7 @@
     <string name="pick_shops_title">Where do impulse buys find you?</string>
     <string name="pick_shops_subtitle">Cachew only steps in on these apps.</string>
     <string name="pick_shops_not_installed">not installed</string>
+    <string name="shops_locked">Night shield: until %1$s you can add shops, not remove them.</string>
     <string name="pick_shops_other_app">Other app</string>
     <string name="pick_shops_continue_empty">Pick at least one app</string>
     <plurals name="pick_shops_continue">

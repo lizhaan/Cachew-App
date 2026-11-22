@@ -117,9 +117,9 @@ fun NightShieldScreen(onboarding: Boolean, onSaved: () -> Unit) {
                     Image(painterResource(R.drawable.ic_moon), contentDescription = null, modifier = Modifier.size(48.dp))
                     Spacer(Modifier.height(16.dp))
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceEvenly, modifier = Modifier.fillMaxWidth()) {
-                        TimeBlock(from.format(HHMM), stringResource(R.string.shield_from)) { picking = "from" }
-                        Text("→", fontFamily = Inter, fontSize = 26.sp, color = CachewColors.TextSecondary)
-                        TimeBlock(to.format(HHMM), stringResource(R.string.shield_to)) { picking = "to" }
+                        TimeBlock(from.format(HHMM), stringResource(R.string.shield_from), Modifier.weight(1f)) { picking = "from" }
+                        Text("→", fontFamily = Inter, fontSize = 24.sp, color = CachewColors.TextSecondary)
+                        TimeBlock(to.format(HHMM), stringResource(R.string.shield_to), Modifier.weight(1f)) { picking = "to" }
                     }
                 }
                 Spacer(Modifier.height(CachewSize.Gap))
@@ -203,12 +203,13 @@ fun NightShieldScreen(onboarding: Boolean, onSaved: () -> Unit) {
 
 
 @Composable
-private fun TimeBlock(time: String, label: String, onClick: () -> Unit) {
+private fun TimeBlock(time: String, label: String, modifier: Modifier, onClick: () -> Unit) {
+    // Each time takes half of the card and never wraps ("01:1" / "0" on narrow phones).
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier.clip(RoundedCornerShape(16.dp)).clickable(onClick = onClick).padding(horizontal = 10.dp, vertical = 6.dp),
+        modifier = modifier.clip(RoundedCornerShape(16.dp)).clickable(onClick = onClick).padding(vertical = 6.dp),
     ) {
-        Text(time, fontFamily = Inter, fontWeight = FontWeight.ExtraBold, fontSize = 50.sp, letterSpacing = (-1.5).sp, color = CachewColors.Title)
+        Text(time, fontFamily = Inter, fontWeight = FontWeight.ExtraBold, fontSize = 40.sp, letterSpacing = (-1.2).sp, color = CachewColors.Title, maxLines = 1, softWrap = false)
         Text(label, style = CachewType.Body.copy(fontSize = 16.sp), color = CachewColors.TextSecondary)
     }
 }
