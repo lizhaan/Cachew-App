@@ -24,3 +24,6 @@ Thumbs.db
 
 # Logs
 *.log
+
+# Release APKs (published on GitHub Releases, not in git)
+/release/

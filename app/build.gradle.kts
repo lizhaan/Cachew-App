@@ -1,8 +1,21 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.kotlin.serialization)
 }
+
+// Release signing: the key and its passwords live outside git, in keystore.properties next to
+// the project (see keystore.properties.example). Without it, release builds stop with a hint.
+val keystoreProps = Properties().apply {
+    rootProject.file("keystore.properties").takeIf { it.exists() }?.inputStream()?.use(::load)
+}
+val hasReleaseKey = keystoreProps.getProperty("storeFile") != null
+
+// Bump BOTH before every new APK, or phones won't install it over the old one.
+val cachewVersionCode = 2
+val cachewVersionName = "1.0"
 
 android {
     namespace = "app.cachew"
@@ -14,14 +27,26 @@ android {
         applicationId = "app.cachew"
         minSdk = 26
         targetSdk = 37
-        versionCode = 1
-        versionName = "0.1"
+        versionCode = cachewVersionCode
+        versionName = cachewVersionName
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    signingConfigs {
+        if (hasReleaseKey) {
+            create("release") {
+                storeFile = rootProject.file(keystoreProps.getProperty("storeFile"))
+                storePassword = keystoreProps.getProperty("storePassword")
+                keyAlias = keystoreProps.getProperty("keyAlias")
+                keyPassword = keystoreProps.getProperty("keyPassword")
+            }
+        }
+    }
+
     buildTypes {
         release {
+            if (hasReleaseKey) signingConfig = signingConfigs.getByName("release")
             // R8 stays off: the spec asks not to minify (Accessibility service, Share, WorkManager).
             optimization {
                 enable = false
@@ -60,4 +85,16 @@ dependencies {
     androidTestImplementation(libs.androidx.junit)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
     debugImplementation(libs.androidx.compose.ui.tooling)
+}
+
+// gradlew.bat cachewApk → builds the signed release APK and copies it to release/Cachew-<version>.apk
+// (the file people download). AGP 9 has no outputFileName any more, so it's a plain copy.
+tasks.register<Copy>("cachewApk") {
+    dependsOn("assembleRelease")
+    doFirst {
+        check(hasReleaseKey) { "No keystore.properties: create the release key first (README, section about releases)." }
+    }
+    from(layout.buildDirectory.dir("outputs/apk/release")) { include("*-release.apk") }
+    rename { "Cachew-$cachewVersionName.apk" }
+    into(rootProject.layout.projectDirectory.dir("release"))
 }
