@@ -4,7 +4,7 @@ Android-застосунок для людей з імпульсивними п�
 
 ## Як встановити на телефон
 
-Для всіх, хто отримав файл `Cachew-1.4.apk` (посиланням або в Telegram). Комп'ютер не потрібен.
+Сторінка для завантаження: **https://lizhaan.github.io/cachew-releases/** (там кнопка «Download for Android» і ці ж кроки англійською та українською). Комп'ютер не потрібен.
 
 1. **Завантаж** файл `.apk` за посиланням або відкрий його в Telegram.
 2. **Відкрий файл.** Телефон спитає, чи можна встановлювати застосунки з цього джерела (браузера чи Telegram). Натисни «Налаштування» → увімкни «Дозволити з цього джерела» → повернись назад → «Встановити».
@@ -50,7 +50,14 @@ gradlew.bat testDebugUnitTest
 
 1. У `app/build.gradle.kts` збільш `cachewVersionCode` і `cachewVersionName`.
 2. `gradlew.bat cachewApk` → файл `release/Cachew-<версія>.apk`.
-3. `gh release create v<версія> release/Cachew-<версія>.apk --notes "..."`.
+3. Опублікуй у публічному репозиторії [cachew-releases](https://github.com/lizhaan/cachew-releases) (цей репозиторій приватний, з нього файли ніхто не завантажить). Додай той самий файл ще й під назвою `Cachew.apk`: на нього веде кнопка сайту, і вона завжди відкриває останній реліз.
+
+   ```bash
+   cp release/Cachew-<версія>.apk Cachew.apk
+   gh release create v<версія> release/Cachew-<версія>.apk Cachew.apk --repo lizhaan/cachew-releases --title "Cachew <версія>" --notes "..."
+   ```
+
+Сайт для завантаження: https://lizhaan.github.io/cachew-releases/ (файл `index.html` у тому ж репозиторії). Сайт правити не треба: після нового релізу кнопка сама веде на нову версію.
 
 Release- і debug-версії підписані різними ключами, тож одна не встановиться поверх іншої: спершу видали попередню (дані Cachew при цьому зникнуть).
 
