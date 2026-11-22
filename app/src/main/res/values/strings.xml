@@ -72,16 +72,16 @@
     <string name="mood_bored">Bored</string>
     <string name="mood_stressed">Stressed</string>
     <string name="mood_fine">Fine</string>
-    <string name="questions_on_list">Was it on your list?</string>
-    <string name="yes">Yes</string>
-    <string name="no">No</string>
+    <string name="questions_specific">Did you open %1$s for something specific, or just to scroll?</string>
+    <string name="answer_specific">Something specific</string>
+    <string name="answer_scrolling">Just scrolling</string>
     <string name="questions_continue">Continue</string>
 
     <!-- Choice screen (design-v2/02). Headline from the quiz answers; %1$s = mood word ("Tired"). -->
     <string name="headline_mood_scrolling">%1$s, just scrolling.</string>
-    <string name="headline_mood_on_list">%1$s, but on your list.</string>
+    <string name="headline_mood_on_list">%1$s, but here for something specific.</string>
     <string name="headline_fine_scrolling">Feeling fine, just scrolling.</string>
-    <string name="headline_all_good">On your list and feeling fine.</string>
+    <string name="headline_all_good">Feeling fine, here for something specific.</string>
     <string name="choice_body_risky">That\'s when most regret buys happen. What\'s the plan?</string>
     <string name="choice_body_planned">Sounds planned. What\'s the plan?</string>
     <string name="choice_look_title">Just look, save, don\'t buy</string>

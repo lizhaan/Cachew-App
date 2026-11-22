@@ -12,6 +12,10 @@ data class PauseRecord(
     val at: Long,
     val shopPackage: String,
     val mood: Mood?,
+    /**
+     * Second question: true = "Something specific", false = "Just scrolling".
+     * (Named after the v1 question "Was it on your list?"; kept so saved logs still read.)
+     */
     val onList: Boolean?,
     val action: EntryAction,
     /** How long the shop session lasted; null if no session was started (or it's still running). */

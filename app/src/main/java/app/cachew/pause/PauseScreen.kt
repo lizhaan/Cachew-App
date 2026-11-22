@@ -125,6 +125,8 @@ fun PauseFlow(
                 onAnswer = { step = Step.Questions },
             )
             Step.Questions -> QuestionsScreen(
+                shopName = shopName,
+                time = remember(openedAt) { DateFormat.getTimeFormat(context).format(Date(openedAt)) },
                 mood = mood, onList = onList,
                 onMood = { mood = it }, onOnList = { onList = it },
                 onContinue = { step = Step.Decision },

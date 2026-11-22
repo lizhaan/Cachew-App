@@ -31,9 +31,15 @@ import app.cachew.ui.theme.CachewColors
 import app.cachew.ui.theme.CachewSize
 import app.cachew.ui.theme.CachewType
 
-/** Screen 14: mood (2×2 tiles) + "Was it on your list?". Continue needs both answers. */
+/**
+ * Screen 14: mood (2×2 tiles) + "Did you open <shop> for something specific, or just to scroll?".
+ * [specific] = true for "Something specific", false for "Just scrolling". Continue needs both answers.
+ */
 @Composable
 fun QuestionsScreen(
+    shopName: String,
+    /** "22:42": when the shop was opened, shown top right. */
+    time: String,
     mood: Mood?,
     onList: Boolean?,
     onMood: (Mood) -> Unit,
@@ -51,6 +57,7 @@ fun QuestionsScreen(
             Spacer(Modifier.height(20.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(stringResource(R.string.questions_label).uppercase(), style = CachewType.Label, color = CachewColors.PurpleText, modifier = Modifier.weight(1f))
+                Text(time, style = CachewType.Body.copy(fontSize = 14.sp), color = CachewColors.TextSecondary)
             }
             Row(verticalAlignment = Alignment.Bottom) {
                 Text(
@@ -84,17 +91,17 @@ fun QuestionsScreen(
 
             Spacer(Modifier.height(16.dp))
             Text(
-                stringResource(R.string.questions_on_list),
+                stringResource(R.string.questions_specific, shopName),
                 style = CachewType.H2,
                 color = CachewColors.Title,
             )
             Spacer(Modifier.height(14.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(CachewSize.Gap)) {
-                ChoiceTile(selected = onList == true, onClick = { onOnList(true) }, modifier = Modifier.weight(1f)) {
-                    ChoiceLabel(stringResource(R.string.yes))
+                ChoiceTile(selected = onList == true, onClick = { onOnList(true) }, height = 72.dp, modifier = Modifier.weight(1f)) {
+                    ChoiceLabel(stringResource(R.string.answer_specific))
                 }
-                ChoiceTile(selected = onList == false, onClick = { onOnList(false) }, modifier = Modifier.weight(1f)) {
-                    ChoiceLabel(stringResource(R.string.no))
+                ChoiceTile(selected = onList == false, onClick = { onOnList(false) }, height = 72.dp, modifier = Modifier.weight(1f)) {
+                    ChoiceLabel(stringResource(R.string.answer_scrolling))
                 }
             }
             Spacer(Modifier.height(16.dp))
