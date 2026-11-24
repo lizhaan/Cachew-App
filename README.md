@@ -11,7 +11,7 @@
 
 <p align="center">
   <a href="https://lizhaan.github.io/cachew-releases/"><b>⬇ Завантажити для Android</b></a>
-  &nbsp;·&nbsp; Android 8.0+ &nbsp;·&nbsp; безкоштовно, без акаунтів
+  &nbsp;·&nbsp; Android 8.0+ &nbsp;·&nbsp;
 </p>
 
 ## Що це
@@ -50,8 +50,6 @@ Cachew — Android-застосунок для людей, які купують
    3. **Робота у фоні:** кнопка «Open» відкриє потрібне місце саме для твого телефона (Xiaomi, Samsung, Huawei, Oppo, Vivo…). Без цього на деяких телефонах пауза з'являється лише після того, як відкриєш Cachew.
    4. **Сповіщення:** щоб прийшло нагадування «Still want it?».
 
-Готово: відкрий обраний магазин, і Пенні покаже паузу.
-
 ## Збірка (Windows)
 
 ```bash
@@ -70,28 +68,7 @@ gradlew.bat testDebugUnitTest
 
 Усі числа правил (пауза 10 с, сесія 10 хв, +15/+5 cashews, пороги рівнів, нічний щит, курси валют) — в одному файлі `app/src/main/java/app/cachew/data/Rules.kt`.
 
-### APK для людей (release)
+### APK (release)
 
-Один раз — створити ключ підпису (питає паролі; придумай і запиши їх):
-
-```bash
-"C:\Program Files\Android\Android Studio\jbr\bin\keytool.exe" -genkeypair -v -keystore cachew-release.jks -alias cachew -keyalg RSA -keysize 2048 -validity 10000
-```
-
-Потім скопіюй `keystore.properties.example` у `keystore.properties` і впиши ті самі паролі. **Збережи `cachew-release.jks` і `keystore.properties` назавжди** (хмара + флешка): без них не вийде випустити оновлення, яке встановиться поверх старого Cachew. У git вони не потрапляють.
-
-Кожен новий APK:
-
-1. У `app/build.gradle.kts` збільш `cachewVersionCode` і `cachewVersionName`.
-2. `gradlew.bat cachewApk` → файл `release/Cachew-<версія>.apk`.
-3. Опублікуй у публічному репозиторії [cachew-releases](https://github.com/lizhaan/cachew-releases) (цей репозиторій приватний, з нього файли ніхто не завантажить). Додай той самий файл ще й під назвою `Cachew.apk`: на нього веде кнопка сайту, і вона завжди відкриває останній реліз.
-
-   ```bash
-   cp release/Cachew-<версія>.apk Cachew.apk
-   gh release create v<версія> release/Cachew-<версія>.apk Cachew.apk --repo lizhaan/cachew-releases --title "Cachew <версія>" --notes "..."
-   ```
-
-Сайт для завантаження: https://lizhaan.github.io/cachew-releases/ (файл `index.html` у тому ж репозиторії). Сайт правити не треба: після нового релізу кнопка сама веде на нову версію.
-
-Release- і debug-версії підписані різними ключами, тож одна не встановиться поверх іншої: спершу видали попередню (дані Cachew при цьому зникнуть).
+Сайт для завантаження: https://lizhaan.github.io/cachew-releases/ (файл `index.html` у тому ж репозиторії).
 
