@@ -135,11 +135,11 @@ SVG перетвори у Vector Drawable (res/drawable/ic_*.xml).
 
 - `Theme.kt`: еталон кольорів, градієнтів, типографіки і розмірів. Поклади його в ui/theme/ і бери кольори тільки звідти.
 - `colors.xml`: ті самі кольори для XML (тема Activity, сповіщення).
-- Шрифт: Inter (Regular, Medium, SemiBold, Bold, ExtraBold, Black) у res/font/. Файли .otf скопіюй зі старого проєкту: `C:\Users\ASUS vivobook\Downloads\Telegram Desktop\Cachew_Android_for_Liza\Cachew\app\src\main\res\font`.
+- Шрифт: Inter (Regular, Medium, SemiBold, Bold, ExtraBold, Black) у res/font/. Файли .otf скопіюй зі старого проєкту (`app/src/main/res/font`; шлях до нього — у CLAUDE.local.md).
 
 ## Старий проєкт як довідка
 
-Стара версія лежить у `C:\Users\ASUS vivobook\Downloads\Telegram Desktop\Cachew_Android_for_Liza\Cachew`. Її можна читати як приклад для складних місць: AccessibilityService, PauseActivity поверх чужого застосунку, intent-filter для Share. Не копіюй її цілими файлами: пиши нову структуру і пояснюй рішення.
+Стара версія лежить лише на моєму комп'ютері (шлях — у CLAUDE.local.md, його немає в репозиторії). Її можна читати як приклад для складних місць: AccessibilityService, PauseActivity поверх чужого застосунку, intent-filter для Share. Не копіюй її цілими файлами: пиши нову структуру і пояснюй рішення.
 
 ## Ігрова механіка (довідка для всіх етапів)
 

@@ -8,6 +8,7 @@ captures/
 
 # Local machine config
 local.properties
+CLAUDE.local.md
 
 # IDE
 .idea/
